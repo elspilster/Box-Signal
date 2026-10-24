@@ -1,0 +1,42 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Chat Bot — Box Signal</title><style>*{box-sizing:border-box}body{margin:0;background:#090c11;color:#f5f5f5;font:16px system-ui,sans-serif}.app{max-width:820px;margin:auto;min-height:100dvh;display:flex;flex-direction:column;background:#111722}header{display:flex;justify-content:space-between;align-items:center;padding:22px;border-bottom:1px solid #29303a}h1{margin:0;font-size:25px}small{color:#b6bdc8}button{cursor:pointer;border:0;border-radius:10px;padding:12px 16px;font:inherit}#new{background:#283343;color:white}#messages{flex:1;min-height:60vh;padding:24px;display:flex;flex-direction:column;gap:12px;overflow:auto}.bubble{max-width:85%;padding:13px 17px;border-radius:16px;white-space:pre-wrap;line-height:1.5}.bot{align-self:flex-start;background:#283343}.you{align-self:flex-end;background:#6d44bb}form{display:flex;gap:10px;padding:18px;border-top:1px solid #29303a}input{flex:1;min-width:0;border-radius:10px;padding:14px;background:#fff;color:#111;border:0;font:inherit}#send{background:#ff793f;color:#171717;font-weight:700}.note{padding:0 20px 16px;color:#a4abb7;font-size:12px}a{color:#ffad7d}</style></head><body><div class="app"><header><div><h1>Chat Bot</h1><small>A traditional chatbot by <a href="/">Box Signal</a> — no AI</small></div><button id="new">New chat</button></header><main id="messages" aria-live="polite"></main><form id="form"><input id="input" placeholder="Say hello…" maxlength="500" required autocomplete="off" aria-label="Message"><button id="send">Send</button></form><div class="note">Rule-based. Messages stay in your browser and aren't sent to a server.</div></div><script>
+const messages=document.querySelector('#messages'),input=document.querySelector('#input');let name='',topic='',turn=0;
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+function say(t,who='bot'){let e=document.createElement('div');e.className='bubble '+who;e.textContent=t;messages.append(e);messages.scrollTop=messages.scrollHeight}
+function reset(){name='';topic='';turn=0;messages.replaceChildren();say("Hello there! I'm Chat Bot. What shall we talk about?")}
+const rules=[
+[/\b(hello|hi|hey|hiya|howdy)\b/i,["Hello! How's your day going?","Hey there! What have you been up to?"]],
+[/\b(how are you|how're you)\b/i,["I'm doing well, thanks! How are you?","All systems cheerful! And you?"]],
+[/\b(good|great|fine|brilliant|awesome|happy)\b/i,["Glad to hear it! What's made today good?","That's lovely. Tell me more!"]],
+[/\b(bad|sad|upset|rough|stressed|lonely)\b/i,["I'm sorry to hear that. Want to talk about it?","That sounds difficult. I'm listening."]],
+[/\b(thanks|thank you|cheers)\b/i,["You're welcome!","Anytime!"]],
+[/\b(bye|goodbye|see you|goodnight)\b/i,["See you soon!","Take care!"]],
+[/\b(joke|funny|laugh)\b/i,["Why did the computer get cold? It left its Windows open!","Why did the chatbot cross the road? It recognised a pattern on the other side."]],
+[/\b(music|song|guitar|piano|band|sing)\b/i,["Music is a great subject! What do you enjoy listening to?","Do you make music, or mostly listen to it?"]],
+[/\b(game|games|gaming|minecraft)\b/i,["What games are you into?","I like the idea of exploring a game world. What's your favourite?"]],
+[/\b(movie|film|cinema)\b/i,["What kind of films do you enjoy?","Have you watched anything good lately?"]],
+[/\b(book|books|reading|novel)\b/i,["What are you reading?","A good story can take you anywhere. What sort do you like?"]],
+[/\b(food|eat|pizza|cooking)\b/i,["What's your favourite thing to eat?","Do you enjoy cooking?"]],
+[/\b(weather|rain|sun|snow)\b/i,["I can't check live weather, but what's it like where you are?"]],
+[/\b(work|job|school|college)\b/i,["How's that going for you?","What's been keeping you busy?"]],
+[/\b(friend|friends|family)\b/i,["The people in our lives make a difference. Tell me more."]],
+[/\b(dog|cat|pet|animal)\b/i,["Do you have any pets?","Animals are wonderful. Which ones do you like?"]],
+[/\b(football|sport|tennis|cricket)\b/i,["Do you play or follow that sport?"]],
+[/\b(computer|technology|internet|website|coding)\b/i,["Computers can be fascinating. What are you working on?"]],
+[/\b(art|drawing|painting|pixel)\b/i,["I love talking about creative projects. What are you making?"]],
+[/\b(idea|create|making|project)\b/i,["That sounds interesting. Tell me about your idea."]],
+[/\b(what is your name|who are you)\b/i,["I'm Chat Bot, a traditional rule-based conversation bot from Box Signal."]],
+[/\b(are you ai|are you artificial intelligence)\b/i,["Nope! I'm a collection of rules and responses, not a language model."]],
+[/\b(what can you do|help)\b/i,["We can chat about music, games, books, art, hobbies and everyday life. Tell me what's on your mind."]],
+[/\b(why|how come)\b/i,["That's a good question. What do you think?"]],
+[/\b(yes|yeah|yep|sure|definitely)\b/i,["Nice! Tell me more.","Sounds good to me!"]],
+[/\b(no|nope|not really)\b/i,["Fair enough. What would you prefer?"]],
+[/\b(love|like|enjoy)\b/i,["What do you like most about it?"]],
+[/\b(hate|dislike|don't like)\b/i,["What puts you off it?"]],
+[/\b(bored|boring)\b/i,["Want a joke, or shall we talk about something new?"]],
+[/\b(thinking|wondering|curious)\b/i,["What have you been thinking about?"]],
+[/\b(tomorrow|today|yesterday|weekend)\b/i,["Have you got any plans?"]],
+[/\b(hobby|hobbies|free time)\b/i,["What do you enjoy doing in your spare time?"]]
+];
+function respond(s){turn++;let n=s.match(/\b(?:my name is|call me|i'm called)\s+([a-z][a-z'-]{1,25})/i);if(n){name=n[1];return 'Nice to meet you, '+name+'! What shall we chat about?'}if(/\b(what's my name|what is my name|do you remember my name)\b/i.test(s))return name?'You told me your name is '+name+'.':"You haven't told me your name yet.";for(let [pattern,answers] of rules)if(pattern.test(s))return pick(answers);return pick(["Tell me a little more about that"+(name?', '+name:'')+".","That's interesting. What happened next?","I'm not sure I follow. Could you explain it another way?","What do you think about it?","Let's explore that. What's the most interesting part?"])}
+document.querySelector('#new').onclick=reset;document.querySelector('#form').onsubmit=e=>{e.preventDefault();let s=input.value.trim();if(!s)return;input.value='';say(s,'you');setTimeout(()=>say(respond(s)),220)};reset();
+</script></body></html>
