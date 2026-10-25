@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cartoon TV | Box Signal</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#0a0b15;color:#f7f6ff;font:16px system-ui,Arial,sans-serif}main{max-width:1100px;margin:auto;padding:32px 18px}header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}a{color:#b8adff}h1{font-size:clamp(2rem,5vw,4rem);margin:18px 0 4px;letter-spacing:-.04em}.eyebrow{color:#bca9ff;letter-spacing:.18em;font-size:.8rem;font-weight:800}.screen{margin-top:25px;background:#050509;border:9px solid #24233a;border-radius:22px;overflow:hidden;box-shadow:0 20px 80px #0008;position:relative}video{display:block;width:100%;aspect-ratio:16/9;background:#000;object-fit:contain}.onair{position:absolute;top:14px;left:14px;background:#ed315c;color:white;font-weight:800;padding:7px 12px;border-radius:6px;pointer-events:none;font-size:.8rem}.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:15px}button{background:#30265b;color:white;border:1px solid #63539b;border-radius:10px;padding:11px 16px;cursor:pointer;font-weight:700}button:hover,button:focus-visible{background:#564397}button:focus-visible{outline:3px solid #e0caff}#status{color:#c9c5db}section{margin-top:26px}.playlist{list-style:none;margin:12px 0;padding:0;display:grid;gap:8px}.playlist button{width:100%;text-align:left;background:#171629;border-color:#34314d;display:flex;justify-content:space-between;gap:12px}.playlist button[aria-current=true]{background:#3e2d6a;border-color:#aa91f8}.note{color:#bbb7cb;line-height:1.5}.tag{font-size:.75rem;color:#d5c5ff}footer{margin-top:35px;color:#918da8;font-size:.85rem}
+</style></head><body><main><header><strong>BOX SIGNAL / CARTOON TV</strong><a href="/">Back to Box Signal</a></header><p class="eyebrow">THE LITTLE CARTOON CHANNEL</p><h1>Cartoon TV</h1><p class="note">Five films. One channel. Playing one after another, then starting again.</p><div class="screen"><span class="onair">● ON AIR</span><video id="tv" controls playsinline preload="metadata"></video></div><div class="controls"><button id="play">▶ Play channel</button><button id="next">Next film →</button><button id="mute">🔇 Unmute</button><button id="full">⛶ Fullscreen</button><span id="status" role="status" aria-live="polite"></span></div><section><h2>On the channel</h2><ol class="playlist" id="playlist"></ol><p class="note">Sound may require a click to start. The playlist loops while this page is open. This is an on-demand continuous playlist, not a synchronised live broadcast.</p></section><footer>© Box Signal · Cartoon TV</footer></main>
+<script>
+const films=[
+{title:"Caminandes: Gran Dillama",src:"Caminandes_Gran_Dillama_compressed.mp4"},
+{title:"HERO",src:"HERO_compressed.mp4"},
+{title:"Children's Film",src:"Childrens_compressed.mp4"},
+{title:"Sprite Fright",src:"Sprite_Fright_compressed.mp4"},
+{title:"Cartoon TV: Film 5",src:"CartoonTV_Film5.mp4"}
+];
+const v=document.getElementById("tv"),status=document.getElementById("status"),list=document.getElementById("playlist"),mute=document.getElementById("mute");let index=0;
+function render(){list.innerHTML="";films.forEach((film,i)=>{const li=document.createElement("li"),b=document.createElement("button");b.textContent=(i===index?"▶ NOW: ":"")+film.title;b.setAttribute("aria-current",String(i===index));b.onclick=()=>load(i,true);li.appendChild(b);list.appendChild(li)});status.textContent="Now showing: "+films[index].title+" · Up next: "+films[(index+1)%films.length].title}
+function load(i,autoplay){index=(i+films.length)%films.length;v.src=films[index].src;v.load();render();if(autoplay)v.play().catch(()=>{status.textContent="Press Play to start "+films[index].title})}
+v.addEventListener("ended",()=>load(index+1,true));v.addEventListener("error",()=>{status.textContent="Could not load "+films[index].title+". Check the video file path."});
+document.getElementById("play").onclick=()=>{if(v.paused)v.play().catch(()=>{status.textContent="Playback was blocked. Try the video's Play control."});else v.pause()};
+document.getElementById("next").onclick=()=>load(index+1,true);
+mute.onclick=()=>{v.muted=!v.muted;mute.textContent=v.muted?"🔇 Unmute":"🔊 Mute"};
+document.getElementById("full").onclick=()=>{if(v.requestFullscreen)v.requestFullscreen()};
+v.addEventListener("play",()=>{document.getElementById("play").textContent="❚❚ Pause"});v.addEventListener("pause",()=>{document.getElementById("play").textContent="▶ Play channel"});
+v.muted=true;load(0,false);
+</script></body></html>
