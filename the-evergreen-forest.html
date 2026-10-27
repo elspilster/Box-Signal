@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Evergreen Forest — A Scrolling Story</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #050c1d; }
+  body { font-family: Impact, 'Arial Black', 'Trebuchet MS', sans-serif; }
+  .stage { position: fixed; inset: 0; overflow: hidden; display: grid; place-items: center; background: radial-gradient(ellipse at center, #142a52 0%, #07152f 55%, #020611 100%); }
+  .stage::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(to bottom, #020611 0%, transparent 17%, transparent 83%, #020611 100%); }
+  .stars { position: absolute; inset: 0; opacity: .35; background-image: radial-gradient(#84bfff 1px, transparent 1px); background-size: 58px 64px; }
+  .story { position: absolute; left: 50%; top: 100%; width: min(900px, 84vw); text-align: center; transform: translateX(-50%); animation: storyScroll 65s linear infinite; will-change: top; }
+  .story p { margin: 0 0 1.55em; color: #36a3ff; font-size: clamp(30px, 5.4vw, 74px); font-weight: 900; line-height: 1.32; letter-spacing: .035em; text-shadow: 0 4px 0 #0b3f92, 0 8px 0 #06235b, 0 12px 24px #000a, 0 0 20px #198aff55; }
+  .story p:last-child { margin-bottom: 0; }
+  @keyframes storyScroll { from { top: 100%; } to { top: calc(-1 * var(--story-height)); } }
+  @media (prefers-reduced-motion: reduce) { .story { animation-duration: 105s; } }
+</style>
+</head>
+<body>
+<main class="stage" aria-label="The Evergreen Forest animated story">
+  <div class="stars" aria-hidden="true"></div>
+  <article class="story" id="story">
+    <p>Five young, beautiful red squirrels lived in the forest.</p>
+    <p>They had finally made a little home for themselves after all these years of wandering.</p>
+    <p>“What shall we call our home, Nutter?” Marie asked her husband.</p>
+    <p>“Let's call it the Evergreen Forest,” replied Nutter.</p>
+  </article>
+</main>
+<script>
+  const story = document.getElementById('story');
+  function measure() { story.style.setProperty('--story-height', `${Math.ceil(story.getBoundingClientRect().height)}px`); }
+  addEventListener('resize', measure);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
+  measure();
+</script>
+</body>
+</html>
