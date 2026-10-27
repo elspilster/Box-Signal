@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Rainbow Sky — Box Signal</title><style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#62c9ff}canvas{width:100%;height:100%;display:block}.note{position:fixed;bottom:15px;right:18px;color:#ffffffaa;font:12px system-ui,sans-serif;letter-spacing:.09em;pointer-events:none}
+</style></head><body><canvas id="sky" aria-label="A colourful rainbow in a blue sky, with fluffy clouds drifting from right to left"></canvas><div class="note">BOX SIGNAL · RAINBOW SKY</div><script>
+const canvas=document.querySelector('#sky'),ctx=canvas.getContext('2d');let width,height,dpr;function resize(){dpr=Math.min(devicePixelRatio||1,2);width=innerWidth;height=innerHeight;canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0)}addEventListener('resize',resize);resize();
+const clouds=[{x:.02,y:.17,s:1.05,v:12},{x:.45,y:.09,s:.8,v:19},{x:.82,y:.22,s:1.3,v:15},{x:1.24,y:.13,s:1,v:22},{x:1.58,y:.3,s:.76,v:13},{x:.19,y:.4,s:.7,v:9},{x:.7,y:.48,s:.58,v:12},{x:1.12,y:.53,s:.95,v:17},{x:1.52,y:.65,s:1.15,v:11}];
+function ellipse(x,y,rx,ry){ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);ctx.fill()}
+function cloud(x,y,scale){ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);ctx.fillStyle='#a5d3e9a0';ellipse(5,15,115,30);ctx.fillStyle='#fff';ellipse(-66,6,49,32);ellipse(-29,-14,49,44);ellipse(18,-28,58,53);ellipse(72,-2,54,37);ellipse(14,11,113,29);ctx.fillStyle='#f1fbff';ellipse(-25,-21,40,27);ellipse(15,-38,37,25);ctx.restore()}
+function frame(time){let t=time/1000;let grad=ctx.createLinearGradient(0,0,0,height);grad.addColorStop(0,'#228ef0');grad.addColorStop(.57,'#76d0ff');grad.addColorStop(1,'#c8efff');ctx.fillStyle=grad;ctx.fillRect(0,0,width,height);
+const cx=width*.5,base=height*.98,R=Math.min(width*.53,height*.88),band=Math.max(9,R*.105);ctx.save();ctx.lineCap='butt';const colours=['#f34853','#ff8b32','#ffe151','#52c878','#39b6e8','#5376df','#a56bd7'];for(let i=0;i<colours.length;i++){ctx.beginPath();ctx.arc(cx,base,R-(i+.5)*band,Math.PI,0);ctx.strokeStyle=colours[i];ctx.lineWidth=band+1;ctx.globalAlpha=.88;ctx.stroke()}ctx.restore();
+ctx.save();ctx.globalAlpha=.09;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(cx,base,R-band*7.4,Math.PI,0);ctx.lineTo(cx+R,base);ctx.lineTo(cx-R,base);ctx.closePath();ctx.fill();ctx.restore();
+const unit=Math.max(130,Math.min(width,height)*.18);for(const c of clouds){const span=width+unit*c.s*3.2;const x=((c.x*width-t*c.v+unit*c.s*2)%span+span)%span-unit*c.s*1.8;cloud(x,c.y*height,unit/185*c.s)}requestAnimationFrame(frame)}requestAnimationFrame(frame);
+</script></body></html>
