@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Sliding Picture — Box Signal</title>
+<style>
+:root{--gold:#f5d596;--cream:#fff3dc;--dark:#0a1020}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% 18%,#273c61,#101a30 48%,#070b15);color:var(--cream);font-family:Georgia,serif}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.35;background-image:radial-gradient(1.5px 1.5px at 15% 24%,#fff 99%,transparent),radial-gradient(1px 1px at 64% 12%,#fff 99%,transparent),radial-gradient(1.5px 1.5px at 85% 43%,#fff 99%,transparent);background-size:310px 270px}
+main{position:relative;max-width:1120px;margin:auto;padding:26px 20px 50px}
+.brand{font:700 12px Arial,sans-serif;letter-spacing:.22em;color:var(--gold);text-decoration:none}
+header{text-align:center;margin:10px auto 24px}h1{font-size:clamp(36px,6vw,68px);font-weight:normal;color:var(--gold);margin:12px 0;text-shadow:0 4px 24px #000}header p{font-size:17px;line-height:1.6;margin:0 auto;max-width:600px;color:#e9dcbf}
+.layout{display:grid;grid-template-columns:minmax(0,630px) minmax(240px,320px);align-items:start;justify-content:center;gap:26px}
+.panel{background:linear-gradient(#1c2235e8,#0b1223ef);border:1px solid #d6a85b6b;border-radius:22px;padding:18px;box-shadow:0 20px 70px #0009}
+.board-frame{padding:10px;background:linear-gradient(135deg,#edcb87,#76502c 32%,#d9a75b 65%,#5a361f);border:2px ridge #f2ce8a;border-radius:13px;box-shadow:0 15px 35px #0008}
+.board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));aspect-ratio:1;gap:3px;background:#100f19;padding:3px;border:3px solid #241928;border-radius:5px;touch-action:manipulation}
+.tile{position:relative;min-width:0;min-height:0;border:0;border-radius:2px;background-color:#141829;background-repeat:no-repeat;background-size:400% 400%;cursor:pointer;transition:filter .15s,transform .12s;box-shadow:inset 0 0 0 1px #fff3}
+.tile:hover:not(.empty){filter:brightness(1.17)}.tile:active:not(.empty){transform:scale(.97)}.tile:focus-visible{outline:3px solid white;outline-offset:-4px;z-index:2}
+.tile.empty{background:none;box-shadow:inset 0 0 30px #000a;cursor:default}.tile.movable:not(.empty){box-shadow:inset 0 0 0 2px #ffdf95a8,0 0 12px #f4bc5d55}
+.board.solved{gap:0;padding:0;border:0;overflow:hidden}.board.solved .tile{box-shadow:none;border-radius:0;cursor:default}.board.solved .tile.empty{background-size:400% 400%;background-repeat:no-repeat}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:17px}.stat{background:#0d1424;border:1px solid #8b704b;border-radius:9px;text-align:center;padding:13px}.stat small{display:block;font:700 10px Arial,sans-serif;letter-spacing:.16em;color:#c9b58d}.stat strong{display:block;font:normal 29px Georgia,serif;color:var(--gold);margin-top:5px}
+.btn{width:100%;min-height:47px;padding:12px 16px;margin:5px 0;border:1px solid #ffe4aa;border-radius:7px;background:linear-gradient(145deg,#ffe7a5,#bd823e);color:#29190b;font:800 12px Arial,sans-serif;letter-spacing:.13em;cursor:pointer;text-transform:uppercase;box-shadow:0 5px 0 #63411f}.btn:hover{filter:brightness(1.09)}.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #63411f}.btn.secondary{background:#252b3d;color:#ffdfab;border-color:#937248;box-shadow:0 4px 0 #0b0d17}
+.preview{width:100%;aspect-ratio:1;border:5px ridge #ad7d45;border-radius:8px;object-fit:cover;display:block;margin:8px auto 14px}.aside h2{font-size:23px;font-weight:normal;color:var(--gold);margin:0 0 8px}.aside p{font:14px/1.6 Arial,sans-serif;color:#e6d6ba}
+.filelabel{display:block;margin:16px 0 0;text-align:center;cursor:pointer;padding:11px;border:1px dashed #c5a16a;border-radius:7px;color:#f9dda8;font:700 12px Arial,sans-serif;letter-spacing:.06em}
+.filelabel input{display:none}.message{min-height:28px;text-align:center;font:700 14px/1.5 Arial,sans-serif;color:#ffdf9c;margin-top:14px}
+.help{text-align:center;margin:16px 0 0;color:#bcb2a6;font:12px/1.6 Arial,sans-serif}
+.won{display:none;text-align:center;background:#223a30;border:1px solid #f3d28e;border-radius:12px;padding:15px;margin-top:15px;color:#ffebbb}.won.show{display:block}.won h2{margin:4px 0 7px;font-size:27px}.won p{margin:0;font:14px/1.6 Arial,sans-serif}
+@media(max-width:760px){.layout{grid-template-columns:minmax(0,570px)}.aside{display:grid;grid-template-columns:1fr 1fr;gap:12px}.aside h2,.aside p,.aside .stats,.aside .won,.aside .message,.aside .filelabel{grid-column:1/-1}.preview{max-width:190px;grid-column:1/-1}.btn{margin:0}.panel{padding:12px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style></head><body><main>
+<a class="brand" href="#" aria-label="Box Signal">✦ BOX SIGNAL · CREATE & PLAY</a>
+<header><h1>The Sliding Picture</h1><p>Fifteen pieces. One empty space. Slide the picture back together to reveal the hidden scene.</p></header>
+<div class="layout"><section class="panel"><div class="board-frame"><div id="board" class="board" role="group" aria-label="Four by four sliding picture puzzle"></div></div><div id="win" class="won" role="status"><h2>✦ Picture Complete! ✦</h2><p>Every piece has found its place. Beautifully done!</p></div><p class="help">Click or tap a piece beside the empty square to move it. You can also use your arrow keys.</p></section>
+<aside class="panel aside"><h2>The Picture</h2><p>Use this little reference to help put the image back together.</p><img id="preview" class="preview" alt="The completed puzzle image"><div class="stats"><div class="stat"><small>MOVES</small><strong id="moves">0</strong></div><div class="stat"><small>TIME</small><strong id="time">00:00</strong></div></div>
+<button class="btn" id="shuffle">↻ New Shuffle</button><button class="btn secondary" id="reset">Reset Puzzle</button>
+<label class="filelabel">✦ Use your own picture<input type="file" id="upload" accept="image/*"></label>
+<div class="message" id="message" aria-live="polite">Slide a tile to begin.</div></aside></div></main>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id),board=$('board');
+const artwork=`<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800">
+<defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#0d1c43"/><stop offset=".5" stop-color="#684b87"/><stop offset="1" stop-color="#f5ad72"/></linearGradient><linearGradient id="lake" x2="0" y2="1"><stop stop-color="#d58d91"/><stop offset="1" stop-color="#102c4d"/></linearGradient><radialGradient id="moon"><stop stop-color="#fff9da"/><stop offset="1" stop-color="#f6d59b"/></radialGradient></defs>
+<rect width="800" height="800" fill="url(#sky)"/><circle cx="560" cy="173" r="92" fill="url(#moon)"/><circle cx="560" cy="173" r="115" fill="#ffe6b1" opacity=".09"/>
+<g fill="#fff9da">${Array.from({length:44},(_,i)=>{let x=(i*173+37)%790,y=(i*83+19)%330,r=i%5===0?2.5:1.3;return `<circle cx="${x}" cy="${y}" r="${r}" opacity=".8"/>`}).join('')}</g>
+<path d="M0 440L130 255 260 425 375 294 540 455 650 335 800 455V800H0" fill="#28365c"/>
+<path d="M0 495L135 368 255 498 430 345 620 515 800 387V800H0" fill="#172c48"/>
+<path d="M0 535Q220 485 400 535T800 520V800H0" fill="url(#lake)"/>
+<path d="M0 568Q200 545 400 568T800 557M0 635Q220 610 460 640T800 621M0 710Q200 683 440 710T800 693" fill="none" stroke="#ffcd9b" stroke-width="5" opacity=".25"/>
+<path d="M90 495L180 450 235 460 285 405 345 429 365 510 405 510 422 420 488 395 525 450 588 451 650 500 650 536H90Z" fill="#0e1d32"/>
+<g fill="#17263a" stroke="#b38b61" stroke-width="7"><rect x="262" y="325" width="268" height="210" rx="6"/><path d="M242 332L396 195 548 332Z"/><rect x="366" y="240" width="60" height="80"/><rect x="472" y="268" width="42" height="77"/></g>
+<g fill="#ffdc8c" stroke="#47344d" stroke-width="10"><rect x="297" y="360" width="53" height="71" rx="25"/><rect x="444" y="360" width="53" height="71" rx="25"/><path d="M375 535V444a22 22 0 0 1 44 0v91Z"/></g>
+<path d="M0 550Q120 510 240 555T500 560T800 530V800H0" fill="#10283b" opacity=".5"/>
+<g fill="#0d2030"><path d="M0 510L35 410 70 510ZM38 530L80 375 123 530ZM665 520L720 350 775 520ZM718 560L770 390 820 560Z"/></g>
+<g fill="#ffca79" opacity=".85"><circle cx="145" cy="520" r="5"/><circle cx="640" cy="475" r="4"/><circle cx="670" cy="530" r="5"/><circle cx="210" cy="590" r="4"/></g>
+<path d="M0 760Q200 690 390 755T800 735V800H0" fill="#071b2b" opacity=".65"/>
+</svg>`;
+let img='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(artwork);
+let tiles=[],moves=0,seconds=0,timer=null,started=false,won=false,initial=[];
+const solved=Array.from({length:15},(_,i)=>i+1).concat(0);
+function render(){board.innerHTML='';board.classList.toggle('solved',won);
+ tiles.forEach((value,pos)=>{let b=document.createElement('button');b.type='button';b.className='tile';if(value===0&&!won){b.classList.add('empty');b.setAttribute('aria-label','Empty square');b.disabled=true}else{let n=value||16;let x=(n-1)%4,y=Math.floor((n-1)/4);b.style.backgroundImage=`url("${img}")`;b.style.backgroundPosition=`${x*100/3}% ${y*100/3}%`;b.setAttribute('aria-label',value?'Move picture tile '+value:'Completed picture square');b.onclick=()=>move(pos)}
+ if(value&&adjacent(pos,tiles.indexOf(0))&&!won)b.classList.add('movable');if(won)b.disabled=true;board.append(b)});
+ $('moves').textContent=moves;$('win').classList.toggle('show',won)}
+function adjacent(a,b){return Math.abs(Math.floor(a/4)-Math.floor(b/4))+Math.abs(a%4-b%4)===1}
+function tick(){seconds++;$('time').textContent=String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0')}
+function stop(){if(timer)clearInterval(timer);timer=null}
+function move(pos){if(won)return;let blank=tiles.indexOf(0);if(!adjacent(pos,blank))return;
+ if(!started){started=true;timer=setInterval(tick,1000)}[tiles[pos],tiles[blank]]=[tiles[blank],tiles[pos]];moves++;
+ won=tiles.every((v,i)=>v===solved[i]);if(won){stop();$('message').textContent='You solved the sliding picture! ✨';playChime()}render()}
+function shuffle(){stop();tiles=[...solved];let previous=-1;for(let i=0;i<220;i++){let blank=tiles.indexOf(0);let options=[blank-4,blank+4,blank-1,blank+1].filter(p=>p>=0&&p<16&&adjacent(p,blank)&&p!==previous);let p=options[Math.floor(Math.random()*options.length)];[tiles[p],tiles[blank]]=[tiles[blank],tiles[p]];previous=blank}
+ if(tiles.every((v,i)=>v===solved[i]))return shuffle();
+ initial=[...tiles];moves=0;seconds=0;started=false;won=false;$('time').textContent='00:00';$('message').textContent='Slide a tile to begin.';render()}
+function reset(){stop();tiles=[...initial];moves=0;seconds=0;started=false;won=false;$('time').textContent='00:00';$('message').textContent='Back to the starting arrangement.';render()}
+function playChime(){try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;let ctx=new C();[523,659,784,1046].forEach((f,i)=>{let o=ctx.createOscillator(),g=ctx.createGain(),t=ctx.currentTime+i*.17;o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.1,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+.6);o.connect(g).connect(ctx.destination);o.start(t);o.stop(t+.65)});setTimeout(()=>ctx.close(),1600)}catch{}}
+$('shuffle').onclick=shuffle;$('reset').onclick=reset;
+document.addEventListener('keydown',e=>{if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName))return;let blank=tiles.indexOf(0),target={ArrowUp:blank+4,ArrowDown:blank-4,ArrowLeft:blank+1,ArrowRight:blank-1}[e.key];if(target!==undefined){e.preventDefault();if(target>=0&&target<16&&adjacent(target,blank))move(target)}});
+$('upload').onchange=e=>{const file=e.target.files?.[0];if(!file)return;if(!file.type.startsWith('image/')){$('message').textContent='Please choose an image file.';return}const reader=new FileReader();reader.onload=()=>{img=reader.result;$('preview').src=img;shuffle();$('message').textContent='Your picture is ready. Good luck!'};reader.readAsDataURL(file)};
+$('preview').src=img;shuffle();
+})();
+</script></body></html>
