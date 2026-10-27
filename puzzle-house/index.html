@@ -57,6 +57,37 @@ h1,h2{font-family:Cinzel,Georgia,serif;text-shadow:0 4px 28px #000c}h1{font-size
 [hidden]{display:none!important}
 @media(max-width:650px){.scene{padding-top:100px}.lamp{font-size:32px;top:18%}.lamp.left{left:5%}.lamp.right{right:5%}.arch{inset:9% 2% 0}.clock{width:min(270px,67vw)}.panel{padding:0 8px}.top{padding:18px}.progress{font-size:10px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+
+/* Clock Chamber: atmospheric layered scenery */
+.room:before{background:radial-gradient(ellipse at 50% 40%,#8b633b 0%,#3d2a2d 30%,#171626 62%,#080b15 100%)}
+.room .arch{background:radial-gradient(ellipse at 50% 28%,#53403633,transparent 70%),repeating-linear-gradient(90deg,#1a1724 0 42px,#241d2b 42px 46px,#191625 46px 88px);border-color:#2c2632;box-shadow:inset 0 0 0 5px #ae7940,inset 0 0 120px #000b,0 0 0 6px #090b12}
+.room .arch:before{content:"";position:absolute;inset:4% 6%;border-radius:46% 46% 0 0/25% 25% 0 0;border:2px solid #9d7247;box-shadow:0 0 25px #f9b05e20;pointer-events:none}
+.room .panel{padding:30px 24px 36px;background:linear-gradient(180deg,#090e1f5c,#11101bb8 65%,#0d0d19c7);border:1px solid #d6a7603d;border-radius:30px;box-shadow:0 25px 90px #0009, inset 0 0 35px #f6a9470c;backdrop-filter:blur(3px)}
+.room .lead{color:#fcebd1}
+.room h2{filter:drop-shadow(0 0 17px #e6a04b55)}
+.room .lamp{font-size:0;top:23%;width:60px;height:90px;border:7px solid #4a2b17;border-radius:28px 28px 16px 16px;background:radial-gradient(ellipse,#fff4b8 0%,#ffb44a 40%,#9d4318 78%,#241319 100%);box-shadow:inset 0 0 0 3px #dca45b,0 0 65px #ff9c3566,0 0 115px #ff9c352a}
+.room .lamp:before{content:"";position:absolute;left:22px;bottom:100%;width:5px;height:100px;background:linear-gradient(#997044,#37231d)}
+.room .lamp:after{content:"";position:absolute;inset:9px 21px;border-left:3px solid #422316;border-right:3px solid #422316}
+.room .lamp.left{left:7%}.room .lamp.right{right:7%}
+.clock{animation:clockBreath 5s ease-in-out infinite;box-shadow:0 0 0 8px #51331d,0 0 0 15px #a57c46,0 0 80px #ffba5d55,0 22px 55px #000b}
+@keyframes clockBreath{50%{filter:drop-shadow(0 0 14px #ffc66a55)}}
+.clock:before{content:"";position:absolute;inset:-27px;border:3px dashed #ae824e;border-radius:50%;opacity:.6;animation:slowTurn 85s linear infinite;pointer-events:none}
+@keyframes slowTurn{to{transform:rotate(360deg)}}
+.clock:after{content:"✦";position:absolute;top:-47px;left:50%;transform:translateX(-50%);font-size:34px;color:#f3c681;text-shadow:0 0 20px #f8ae54}
+.gear{position:absolute;width:150px;height:150px;border-radius:50%;border:18px dashed #866039;box-shadow:inset 0 0 0 12px #3c2a2a,0 0 0 8px #473025;opacity:.43;z-index:-1;animation:slowTurn 32s linear infinite}
+.gear:after{content:"";position:absolute;inset:25px;border:13px solid #a77a44;border-radius:50%}
+.gear.g1{left:8%;top:43%}.gear.g2{right:8%;top:52%;width:125px;height:125px;animation-direction:reverse}
+.particles{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:1}
+.spark{position:absolute;bottom:-30px;width:4px;height:4px;border-radius:50%;background:#ffde99;box-shadow:0 0 15px 3px #ffc168;animation:rise var(--dur) linear infinite;animation-delay:var(--delay);left:var(--left);opacity:0}
+@keyframes rise{10%{opacity:.8}85%{opacity:.6}100%{transform:translate(var(--drift),-95vh);opacity:0}}
+#unlocked .door-frame{position:relative;box-shadow:0 0 55px #f6bf6d,0 0 145px #f6bf6d7a}
+#unlocked .door-frame:after{content:"";position:absolute;inset:-40px;border-radius:50%;background:radial-gradient(ellipse,#ffebbb44,transparent 68%);z-index:-1;animation:portalPulse 3s ease-in-out infinite}
+@keyframes portalPulse{50%{transform:scale(1.18);opacity:.5}}
+#unlocked .door{transition:transform 2s cubic-bezier(.15,.7,.15,1)}
+#unlocked .panel{animation:reveal .8s ease-out both}
+@keyframes reveal{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:650px){.room .panel{padding:20px 12px 25px}.room .lamp{width:30px;height:50px;border-width:4px}.room .lamp:before{left:10px;height:70px}.room .lamp:after{inset:5px 9px}.gear{opacity:.18}.clock:before{inset:-18px}.room .lamp.left{left:2%}.room .lamp.right{right:2%}}
+@media(prefers-reduced-motion:reduce){.clock,.clock:before,.gear,.spark,#unlocked .door-frame:after{animation:none!important}}
 </style></head><body><div id="app">
 <header class="top"><a class="brand" href="/">← BOX SIGNAL</a><div class="progress" id="progress">THE PUZZLE HOUSE · PROLOGUE</div></header>
 <section class="scene" id="intro"><div class="stars"></div><div class="moon"></div><div class="mountains"></div><div class="panel">
@@ -65,7 +96,7 @@ h1,h2{font-family:Cinzel,Georgia,serif;text-shadow:0 4px 28px #000c}h1{font-size
 <p class="lead">Beyond the moonlit gates stands a house with a curious rule: <strong>every door opens only for those who solve its mystery.</strong></p>
 <button class="btn" id="begin">Enter the house ✦</button><p class="note">Your progress is saved in this browser.</p>
 </div></section>
-<section class="scene room" id="clockRoom" hidden><div class="stars"></div><div class="arch"></div><div class="lamp left" aria-hidden="true">🏮</div><div class="lamp right" aria-hidden="true">🏮</div><div class="panel">
+<section class="scene room" id="clockRoom" hidden><div class="stars"></div><div class="arch"></div><div class="gear g1" aria-hidden="true"></div><div class="gear g2" aria-hidden="true"></div><div class="particles" aria-hidden="true" id="particles"></div><div class="lamp left" aria-hidden="true">🏮</div><div class="lamp right" aria-hidden="true">🏮</div><div class="panel">
 <div class="eyebrow">Room one · The keeper of time</div><h2>The Clock Chamber</h2>
 <p class="lead">The clock has stopped. A message is carved into the stone: <em>“When the little hand rests on three and the long hand points to six, the door shall wake.”</em></p>
 <div class="clock" role="img" aria-label="An ornate clock with adjustable hour and minute hands"><div class="clock-face" id="face"><div class="hand hour" id="hourHand"></div><div class="hand minute" id="minuteHand"></div><div class="pin"></div></div></div>
@@ -75,5 +106,5 @@ h1,h2{font-family:Cinzel,Georgia,serif;text-shadow:0 4px 28px #000c}h1{font-size
 </div></section>
 <section class="scene room" id="unlocked" hidden><div class="stars"></div><div class="arch"></div><div class="panel"><div class="eyebrow">Room one completed</div><h2>The Door Opens</h2><div class="door-frame open"><div class="door"></div></div><p class="lead">The clock begins to chime. Golden light pours through the doorway. You've solved the first mystery.</p><div class="status"><span class="pip done"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div><p class="note">Room Two — The Enchanted Conservatory — is being created next.</p><button class="btn" id="replay">Play room one again</button></div></section>
 </div><script>
-(()=>{const $=id=>document.getElementById(id);let hour=12,minute=0;const key='boxsignal-puzzle-house-room1';const screens=['intro','clockRoom','unlocked'];function show(id){screens.forEach(s=>$(s).hidden=s!==id);$('progress').textContent=id==='intro'?'THE PUZZLE HOUSE · PROLOGUE':id==='clockRoom'?'ROOM 01 OF 05 · LOCKED':'ROOM 01 OF 05 · UNLOCKED';window.scrollTo(0,0)}function update(){ $('hourValue').textContent=hour;$('minuteValue').textContent=String(minute).padStart(2,'0');$('hourHand').style.transform='rotate('+((hour%12)*30+minute*.5)+'deg)';$('minuteHand').style.transform='rotate('+(minute*6)+'deg)';$('message').textContent=''}for(let i=1;i<=12;i++){let n=document.createElement('span');n.className='number';n.textContent=i;let a=i*Math.PI/6;n.style.left=(50+39*Math.sin(a))+'%';n.style.top=(50-39*Math.cos(a))+'%';$('face').append(n)}$('begin').onclick=()=>show(localStorage.getItem(key)==='solved'?'unlocked':'clockRoom');$('hourMinus').onclick=()=>{hour=(hour+10)%12+1;update()};$('hourPlus').onclick=()=>{hour=hour%12+1;update()};$('minuteMinus').onclick=()=>{minute=(minute+55)%60;update()};$('minutePlus').onclick=()=>{minute=(minute+5)%60;update()};$('check').onclick=()=>{if(hour===3&&minute===30){localStorage.setItem(key,'solved');$('pip1').classList.add('done');show('unlocked')}else{$('message').textContent='The gears hesitate. That is not the right time — try again.'}};$('replay').onclick=()=>{hour=12;minute=0;update();show('clockRoom')};update()})();
+(()=>{const $=id=>document.getElementById(id);let hour=12,minute=0;const key='boxsignal-puzzle-house-room1';const screens=['intro','clockRoom','unlocked'];function show(id){screens.forEach(s=>$(s).hidden=s!==id);$('progress').textContent=id==='intro'?'THE PUZZLE HOUSE · PROLOGUE':id==='clockRoom'?'ROOM 01 OF 05 · LOCKED':'ROOM 01 OF 05 · UNLOCKED';window.scrollTo(0,0)}function update(){ $('hourValue').textContent=hour;$('minuteValue').textContent=String(minute).padStart(2,'0');$('hourHand').style.transform='rotate('+((hour%12)*30+minute*.5)+'deg)';$('minuteHand').style.transform='rotate('+(minute*6)+'deg)';$('message').textContent=''}for(let i=1;i<=12;i++){let n=document.createElement('span');n.className='number';n.textContent=i;let a=i*Math.PI/6;n.style.left=(50+39*Math.sin(a))+'%';n.style.top=(50-39*Math.cos(a))+'%';$('face').append(n)}$('begin').onclick=()=>show(localStorage.getItem(key)==='solved'?'unlocked':'clockRoom');$('hourMinus').onclick=()=>{hour=(hour+10)%12+1;update()};$('hourPlus').onclick=()=>{hour=hour%12+1;update()};$('minuteMinus').onclick=()=>{minute=(minute+55)%60;update()};$('minutePlus').onclick=()=>{minute=(minute+5)%60;update()};$('check').onclick=()=>{if(hour===3&&minute===30){localStorage.setItem(key,'solved');$('pip1').classList.add('done');show('unlocked')}else{$('message').textContent='The gears hesitate. That is not the right time — try again.'}};$('replay').onclick=()=>{hour=12;minute=0;update();show('clockRoom')};for(let i=0;i<28;i++){const p=document.createElement('i');p.className='spark';p.style.setProperty('--left',((i*37)%100)+'%');p.style.setProperty('--dur',(7+(i%7)*1.7)+'s');p.style.setProperty('--delay',(-i*.8)+'s');p.style.setProperty('--drift',((i%2?1:-1)*(20+i*4))+'px');$('particles').append(p)}update()})();
 </script></body></html>
