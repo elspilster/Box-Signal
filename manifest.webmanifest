@@ -1,0 +1,19 @@
+{
+  "id": "/",
+  "name": "Box Signal — Ideas. Stories. Play.",
+  "short_name": "Box Signal",
+  "description": "Box Signal creative studio: stories, cartoons, films, games and experiments.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#050607",
+  "theme_color": "#050607",
+  "icons": [
+    {
+      "src": "/box-signal-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
