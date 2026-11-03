@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dancing Stick Man — Box Signal</title>
+<style>
+*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#fff}canvas{display:block;width:100%;height:100%;background:white}
+</style>
+</head>
+<body>
+<canvas id="stage" aria-label="A black stick man dancing energetically against a white background"></canvas>
+<script>
+const canvas=document.getElementById('stage'),ctx=canvas.getContext('2d');let W,H,D;
+function resize(){D=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;canvas.width=Math.round(W*D);canvas.height=Math.round(H*D);ctx.setTransform(D,0,0,D,0,0)}
+addEventListener('resize',resize);resize();
+const TWO=Math.PI*2;
+function limb(x1,y1,x2,y2,w){ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()}
+function circle(x,y,r,fill=true){ctx.beginPath();ctx.arc(x,y,r,0,TWO);fill?ctx.fill():ctx.stroke()}
+function draw(ms){const t=ms/1000,b=t*TWO*1.55;ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+const scale=Math.min(W/460,H/610,1.65),cx=W/2,ground=H*.83;
+ctx.save();ctx.translate(cx,ground);ctx.scale(scale,scale);ctx.strokeStyle='#090909';ctx.fillStyle='#090909';ctx.lineCap='round';ctx.lineJoin='round';
+const sway=Math.sin(b*.5)*27,hop=Math.abs(Math.sin(b))*17;
+ctx.translate(sway,-hop);
+const lean=Math.sin(b*.5+.3)*.12,hip={x:0,y:-151},shoulder={x:Math.sin(lean)*42,y:-284};
+const head={x:shoulder.x+Math.sin(b*.5)*8,y:-340+Math.cos(b)*5};
+const legL=Math.sin(b),legR=Math.sin(b+Math.PI);
+const kneeL={x:-28+legL*34,y:-78+Math.max(0,legL)*19},kneeR={x:28+legR*34,y:-80+Math.max(0,legR)*19};
+const footL={x:kneeL.x-20+legL*38,y:-4-Math.max(0,legL)*36},footR={x:kneeR.x+20+legR*38,y:-4-Math.max(0,legR)*36};
+ctx.lineWidth=12;limb(hip.x,hip.y,kneeL.x,kneeL.y,12);limb(kneeL.x,kneeL.y,footL.x,footL.y,12);limb(hip.x,hip.y,kneeR.x,kneeR.y,12);limb(kneeR.x,kneeR.y,footR.x,footR.y,12);
+limb(footL.x,footL.y,footL.x-19,footL.y+1,10);limb(footR.x,footR.y,footR.x+19,footR.y+1,10);
+limb(hip.x,hip.y,shoulder.x,shoulder.y,14);
+const aL=Math.sin(b+.6),aR=Math.sin(b+Math.PI+.6);
+const elbowL={x:shoulder.x-61-aL*26,y:shoulder.y+33-aL*54};
+const elbowR={x:shoulder.x+61-aR*26,y:shoulder.y+33-aR*54};
+const handL={x:elbowL.x-37-aL*26,y:elbowL.y-31-aL*48};
+const handR={x:elbowR.x+37-aR*26,y:elbowR.y-31-aR*48};
+limb(shoulder.x,shoulder.y,elbowL.x,elbowL.y,12);limb(elbowL.x,elbowL.y,handL.x,handL.y,12);
+limb(shoulder.x,shoulder.y,elbowR.x,elbowR.y,12);limb(elbowR.x,elbowR.y,handR.x,handR.y,12);
+circle(head.x,head.y,37);
+ctx.restore();requestAnimationFrame(draw)}requestAnimationFrame(draw);
+</script>
+</body></html>
