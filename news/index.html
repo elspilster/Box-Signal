@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#050607">
+<meta name="description" content="Read Box Signal News: live headlines and daily archived editions.">
+<title>Box Signal News | Box Signal</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#050607;color:#fff;font-family:Arial,Helvetica,sans-serif}
+.topline{height:6px;background:#ff6a00}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px clamp(16px,4vw,52px);flex-wrap:wrap}
+.brand{font-size:15px;font-weight:900;letter-spacing:.12em;text-decoration:none;color:#fff}.brand span{color:#ff6a00}
+.actions{display:flex;gap:14px;align-items:center;flex-wrap:wrap}.actions a{color:#fff;text-decoration:none;font-size:12px;font-weight:700;letter-spacing:.06em}
+.actions a:last-child{color:#ffb47b}
+.intro{padding:9px 18px 13px;text-align:center;border-top:1px solid #252a2f;font-size:13px;color:#cbd1d5}
+.paper{width:100%;height:calc(100dvh - 116px);min-height:650px;border:0;display:block;background:#f4f0e8}
+.fallback{padding:14px 20px;text-align:center;font-size:13px;color:#bfc4c7}.fallback a{color:#ffb47b}
+@media(max-width:600px){.top{padding:12px 15px}.brand{font-size:13px}.actions a{font-size:11px}.paper{height:calc(100dvh - 125px);min-height:520px}}
+</style>
+</head>
+<body>
+<div class="topline"></div>
+<header class="top">
+<a class="brand" href="/">BOX <span>SIGNAL</span></a>
+<nav class="actions" aria-label="Page navigation">
+<a href="/">STUDIO HOME</a>
+<a href="https://elspilster.github.io/box-signal-news/" target="_blank" rel="noopener noreferrer">OPEN NEWSPAPER DIRECTLY</a>
+</nav>
+</header>
+<div class="intro">BOX SIGNAL NEWS · LIVE HEADLINES · DAILY EDITIONS</div>
+<main>
+<iframe class="paper" title="Box Signal News newspaper" src="https://elspilster.github.io/box-signal-news/" loading="eager" referrerpolicy="strict-origin-when-cross-origin">
+<p>Read <a href="https://elspilster.github.io/box-signal-news/">Box Signal News</a> directly.</p>
+</iframe>
+</main>
+<footer class="fallback">If the embedded newspaper does not appear, <a href="https://elspilster.github.io/box-signal-news/">open it directly here</a>.</footer>
+</body>
+</html>
