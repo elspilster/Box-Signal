@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Box Signal Micro/84</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100svh;display:grid;place-items:center;padding:24px;background:radial-gradient(ellipse at 50% 15%,#46443a,#171816 78%);font:14px "Courier New",monospace;color:#25241e}
+.machine{width:min(920px,100%);padding:clamp(14px,4vw,34px);border:1px solid #a2977e;border-radius:24px;background:linear-gradient(125deg,#ded3b9,#a99b7e);box-shadow:inset 0 2px 3px #fff8, inset 0 -7px 10px #55472b70,0 26px 60px #0009}
+header,footer,.keys,form{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+header,footer{justify-content:space-between}
+.brand{font:900 clamp(23px,5vw,38px) Arial,sans-serif;letter-spacing:-.07em;margin:0}
+.brand span{font:700 12px "Courier New",monospace;letter-spacing:.12em;display:block;margin-bottom:4px}
+.stripes{width:62px;height:30px;transform:skew(-18deg);background:linear-gradient(90deg,#a13d32 33%,#c56a32 33% 66%,#84772d 66%);margin-right:8px}
+.bezel{margin:18px 0 14px;padding:clamp(10px,2vw,20px);background:#34332a;border:2px solid #615748;border-radius:18px;box-shadow:inset 0 4px 10px #000c}
+.screen{position:relative;overflow:hidden;border-radius:13px;padding:clamp(12px,3vw,26px);background:radial-gradient(ellipse at 48% 42%,#13261d,#060e0a);color:#a9ffb5;text-shadow:0 0 8px #6cff8880;box-shadow:inset 0 0 25px #000;min-width:0}
+.screen::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(transparent 0 2px,#0002 3px 4px)}
+#output{height:clamp(235px,44vh,375px);height:clamp(235px,44dvh,375px);overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55;scrollbar-color:#3b7450 #09130d;font-size:clamp(13px,2.3vw,16px)}
+form{border-top:1px solid #75c18755;padding-top:12px;flex-wrap:nowrap}
+input{flex:1;width:0;background:transparent;color:inherit;border:0;border-bottom:1px solid transparent;font:inherit;font-size:16px;caret-color:currentColor}
+input:focus{outline:none;border-color:#75c187}
+button{font:700 12px "Courier New",monospace;color:inherit;cursor:pointer;padding:9px 12px;border:1px solid #776b53;border-radius:5px;background:#e4d8bd;box-shadow:0 2px #756850}
+form button{background:#173526;border-color:#487852;box-shadow:none}
+button:active{transform:translateY(1px)}
+.lamp{display:inline-block;border-radius:50%;width:9px;height:9px;background:#388245;box-shadow:0 0 7px #4cff82;margin-right:7px}
+.vents{width:70px;height:14px;background:repeating-linear-gradient(90deg,#554c3c 0 3px,transparent 3px 8px);border-radius:3px}
+@media(max-width:480px){body{padding:10px}footer{gap:14px}.keys{gap:6px}}
+[hidden]{display:none!important}
+.game{display:grid;justify-items:center;gap:9px}
+.game-bar,.game-controls{display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap}
+.game button{background:#173526;border-color:#487852;box-shadow:none;min-height:40px}
+.game canvas{display:block;width:min(100%,360px);height:auto;aspect-ratio:3/2;border:1px solid #589368;image-rendering:pixelated}
+.game-status{min-height:1.4em;text-align:center}
+.workshop{display:grid;justify-items:center;gap:12px}
+.workshop h2{font-size:1.15rem;margin:0}
+.workshop p{margin:0;text-align:center}
+.workshop-actions{display:flex;justify-content:center;gap:7px;flex-wrap:wrap}
+.workshop button{color:inherit;background:#173526;border-color:#487852;box-shadow:none}
+.workshop button[aria-pressed=true]{background:#a9ffb5;color:#102418}
+.workshop input[type=text]{width:min(220px,100%);border:1px solid #487852;padding:5px}
+.level{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));width:min(100%,432px);gap:2px;background:#08150e;padding:3px;border:1px solid #487852}
+.level button{padding:0;min-width:0;aspect-ratio:1;border:0;border-radius:1px;background:#152d20;font-size:clamp(12px,4vw,23px);line-height:1;touch-action:manipulation}
+.level button[data-tile="#"]{background:#43674f;color:#cbebce}
+.level button[data-tile="*"]{color:#ffd56f}
+.level button[data-tile="!"]{color:#ffa696}
+.level button[data-tile="E"]{color:#a7dfff}
+</style>
+<main class="machine">
+<header><h1 class="brand"><span>BOX SIGNAL</span>Micro/84</h1><div class="stripes" aria-hidden="true"></div></header>
+<div class="bezel"><section class="screen" aria-label="Terminal">
+<div id="output" role="log" aria-label="Terminal output" tabindex="0"></div>
+<form id="terminal"><label for="command">A:&gt;</label><input id="command" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Terminal command" enterkeyhint="go"><button>ENTER</button></form>
+<div class="game" id="game" hidden>
+<div class="game-bar"><strong>CIRCUIT CRAWLER</strong><span id="score"></span></div>
+<canvas id="board" width="360" height="240" aria-label="Circuit Crawler game board"></canvas>
+<div class="game-status" id="game-status" role="status"></div>
+<div class="game-controls" aria-label="Direction controls">
+<button type="button" data-direction="ArrowLeft" aria-label="Left">←</button>
+<button type="button" data-direction="ArrowUp" aria-label="Up">↑</button>
+<button type="button" data-direction="ArrowDown" aria-label="Down">↓</button>
+<button type="button" data-direction="ArrowRight" aria-label="Right">→</button>
+</div>
+<div class="game-controls"><button id="game-start">START</button><button id="game-exit">QUIT</button></div>
+</div>
+<section class="workshop" id="workshop" aria-labelledby="workshop-heading" hidden>
+<h2 id="workshop-heading">GAME WORKSHOP</h2>
+<div class="workshop-actions" id="editor-tools">
+<label>Game title <input type="text" id="level-title" value="Crystal Vault" maxlength="40"></label>
+<button type="button" data-brush="." aria-pressed="false">· Floor</button>
+<button type="button" data-brush="#" aria-pressed="true">■ Wall</button>
+<button type="button" data-brush="S" aria-pressed="false">● Start</button>
+<button type="button" data-brush="*" aria-pressed="false">◆ Gem</button>
+<button type="button" data-brush="!" aria-pressed="false">× Trap</button>
+<button type="button" data-brush="E" aria-pressed="false">▣ Exit</button>
+</div>
+<div class="level" id="level" aria-label="Level grid"></div>
+<p id="workshop-status" role="status"></p>
+<div class="workshop-actions" id="edit-actions">
+<button id="test-level">PLAY TEST</button><button id="save-level">SAVE</button>
+<button id="export-level">EXPORT</button><button id="import-level">IMPORT</button>
+<input type="file" id="level-file" accept=".json,application/json" hidden>
+</div>
+<div class="workshop-actions" id="test-actions" hidden>
+<button data-step="ArrowLeft" aria-label="Left">←</button><button data-step="ArrowUp" aria-label="Up">↑</button>
+<button data-step="ArrowDown" aria-label="Down">↓</button><button data-step="ArrowRight" aria-label="Right">→</button>
+<button id="retry-level">RETRY</button><button id="edit-level">EDIT</button>
+</div>
+<button id="quit-workshop">TERMINAL</button>
+</section>
+</section></div>
+<footer><div class="keys"><button data-command="help">HELP</button><button data-command="dir">DISK</button><button data-command="play">GAME</button><button data-command="make">MAKE</button><button data-command="demo">DEMO</button><button data-command="reboot">RESET</button></div><span><i class="lamp" aria-hidden="true"></i>POWER</span><div class="vents" aria-hidden="true"></div></footer>
+</main>
+<script>
+"use strict";
+const output = document.querySelector("#output");
+const input = document.querySelector("#command");
+const storageKey = "box-signal-micro-84-disk";
+const rom = new Map([
+  ["README.TXT", "Welcome to the Micro/84.\nType HELP to see what the computer can do.\nTry WRITE LOG.TXT My first entry, then TYPE LOG.TXT."],
+  ["SIGNAL.TXT", "BOX SIGNAL WORKSHOP\nBench 04 · Green phosphor display · Drive A"]
+]);
+let disk = new Map();
+let historyIndex = 0;
+const history = [];
+try { disk = new Map(JSON.parse(localStorage.getItem(storageKey) || "[]")); } catch {}
+function print(message) {
+  const row = document.createElement("div");
+  row.textContent = message || "\u00a0";
+  output.append(row);
+  output.scrollTop = output.scrollHeight;
+}
+function boot() {
+  output.replaceChildren();
+  print("BOX SIGNAL MICRO/84  ·  ROM 1.0\n65536 BYTES FREE  ·  DRIVE A READY\n\nType HELP or press the buttons below.");
+}
+function save() {
+  try {
+    localStorage.setItem(storageKey, JSON.stringify([...disk]));
+    return true;
+  } catch {
+    print("Browser storage unavailable. Changes last until you close or reload this page.");
+    return false;
+  }
+}
+const help = [
+  "DIR                    List files on drive A",
+  "TYPE README.TXT        Read a file",
+  "WRITE NAME.TXT text    Create or overwrite a text file",
+  "DEL NAME.TXT           Delete a file you wrote",
+  "CALC 12 * 7            Add, subtract, multiply or divide",
+  "DATE                   Display the clock",
+  "PLAY                   Launch Circuit Crawler",
+  "MAKE                   Open the Game Workshop",
+  "DEMO                   Run the display test",
+  "CLS                    Clear the screen",
+  "REBOOT                 Restart the terminal"
+].join("\n");
+function run(raw) {
+  const line = raw.trim();
+  if (!line) return;
+  history.push(line);
+  historyIndex = history.length;
+  print("A:> " + line);
+  const [, command, args = ""] = line.match(/^(\S+)(?:\s+([\s\S]*))?$/);
+  const [name = ""] = args.toUpperCase().split(/\s+/);
+  switch (command.toLowerCase()) {
+    case "help": print(help); break;
+    case "dir": {
+      const files = new Map([...rom, ...disk]);
+      print("DRIVE A\n" + [...files].sort(([a], [b]) => a.localeCompare(b)).map(([file, value]) =>
+        file.padEnd(18) + String(new TextEncoder().encode(value).length).padStart(5) + " bytes"
+      ).join("\n"));
+      break;
+    }
+    case "type": print(rom.get(name) ?? disk.get(name) ?? "File not found. Try DIR."); break;
+    case "write": {
+      const match = args.match(/^([a-z0-9_-]{1,8}\.txt)\s+(.+)$/i);
+      if (!match) { print("Usage: WRITE NAME.TXT text (up to 8 characters before .TXT)"); break; }
+      if (rom.has(name)) { print("That file is read-only."); break; }
+      disk.set(name, match[2]);
+      if (save()) print("Saved " + name);
+      break;
+    }
+    case "del":
+      if (rom.has(name)) print("That file is read-only.");
+      else if (!disk.delete(name)) print("File not found. Try DIR.");
+      else if (save()) print("Deleted " + name);
+      break;
+    case "calc": {
+      const match = args.match(/^([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*([+*/-])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))$/);
+      if (!match) { print("Usage: CALC 12 * 7"); break; }
+      const a = Number(match[1]);
+      const b = Number(match[3]);
+      const result = {"+": () => a+b, "-": () => a-b, "*": () => a*b, "/": () => a/b}[match[2]]();
+      print(Number.isFinite(result) ? String(Number(result.toPrecision(12))) : "Result out of range or division by zero.");
+      break;
+    }
+    case "date": print(new Date().toLocaleString("en-GB")); break;
+    case "make": openWorkshop(); break;
+    case "play": openGame(); break;
+    case "demo":
+      print("PHOSPHOR TEST\n" + Array.from({length: 9}, (_, row) =>
+        Array.from({length: 28}, (_, column) => " ░▒▓█"[Math.round(2 + 2 * Math.sin(column * 0.37 + row * 0.65))]).join("")
+      ).join("\n") + "\nDISPLAY TEST COMPLETE");
+      break;
+    case "cls": output.replaceChildren(); break;
+    case "reboot": boot(); break;
+    default: print("Unknown command. Type HELP.");
+  }
+}
+document.querySelector("#terminal").addEventListener("submit", event => {
+  event.preventDefault();
+  run(input.value);
+  input.value = "";
+  if (game.hidden && workshop.hidden) input.focus();
+});
+document.querySelectorAll("[data-command]").forEach(button => {
+  button.addEventListener("click", () => {
+    if (!workshop.hidden) {
+      if (button.dataset.command === "make") return;
+      closeWorkshop();
+    }
+    if (!game.hidden) {
+      if (button.dataset.command === "play") return;
+      closeGame();
+    }
+    run(button.dataset.command);
+  });
+});
+input.addEventListener("keydown", event => {
+  if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+  event.preventDefault();
+  historyIndex = Math.max(0, Math.min(history.length, historyIndex + (event.key === "ArrowUp" ? -1 : 1)));
+  input.value = history[historyIndex] || "";
+});
+const game = document.querySelector("#game");
+const terminal = document.querySelector("#terminal");
+const canvas = document.querySelector("#board");
+const ctx = canvas.getContext("2d");
+const start = document.querySelector("#game-start");
+const status = document.querySelector("#game-status");
+const score = document.querySelector("#score");
+const columns = 18;
+const rows = 12;
+const cell = 20;
+const directions = {
+  ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0]
+};
+let trail, direction, nextDirection, chip, points;
+let timer = null;
+let state = "ready";
+
+function drawGame() {
+  ctx.fillStyle = "#09180f";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#234435";
+  for (let x = 0; x < columns; x++) {
+    for (let y = 0; y < rows; y++) ctx.fillRect(x * cell + 9, y * cell + 9, 2, 2);
+  }
+  trail.forEach(([x, y], index) => {
+    ctx.fillStyle = index === 0 ? "#c4ffca" : "#5aba7a";
+    ctx.fillRect(x * cell + 1, y * cell + 1, cell - 2, cell - 2);
+  });
+  if (chip) {
+    ctx.fillStyle = "#ffc766";
+    ctx.fillRect(chip[0] * cell + 5, chip[1] * cell + 5, 10, 10);
+  }
+  score.textContent = "SCORE " + points;
+}
+const sameCell = ([x, y], [otherX, otherY]) => x === otherX && y === otherY;
+
+function placeChip() {
+  const free = [];
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < columns; x++) {
+      const cell = [x, y];
+      if (!trail.some(part => sameCell(part, cell))) free.push(cell);
+    }
+  }
+  return free[Math.floor(Math.random() * free.length)];
+}
+function stopGame(nextState, message, label) {
+  clearInterval(timer);
+  timer = null;
+  state = nextState;
+  status.textContent = message;
+  start.textContent = label;
+}
+function resetGame() {
+  trail = [[6, 6], [5, 6], [4, 6]];
+  direction = nextDirection = directions.ArrowRight;
+  chip = [11, 6];
+  points = 0;
+  drawGame();
+}
+function tick() {
+  direction = nextDirection;
+  const head = [trail[0][0] + direction[0], trail[0][1] + direction[1]];
+  const grows = sameCell(head, chip);
+  const body = grows ? trail : trail.slice(0, -1);
+  if (head[0] < 0 || head[0] >= columns || head[1] < 0 || head[1] >= rows ||
+      body.some(part => sameCell(part, head))) {
+    stopGame("over", "Circuit broken! Final score " + points + ".", "PLAY AGAIN");
+    return;
+  }
+  trail.unshift(head);
+  if (grows) {
+    points += 10;
+    chip = placeChip();
+  } else {
+    trail.pop();
+  }
+  drawGame();
+  if (!chip) stopGame("over", "Board complete! Final score " + points + ".", "PLAY AGAIN");
+}
+function openGame() {
+  stopGame("ready", "Collect the amber chips. Avoid the walls and your trail.", "START");
+  resetGame();
+  output.hidden = terminal.hidden = true;
+  game.hidden = false;
+  start.focus();
+}
+function closeGame() {
+  stopGame("ready", "", "START");
+  game.hidden = true;
+  output.hidden = terminal.hidden = false;
+  input.focus();
+}
+function steer(key) {
+  const turn = directions[key];
+  if (state === "running" && (turn[0] !== -direction[0] || turn[1] !== -direction[1])) {
+    nextDirection = turn;
+  }
+}
+start.addEventListener("click", () => {
+  if (state === "running") {
+    stopGame("paused", "Paused", "RESUME");
+    return;
+  }
+  if (state !== "paused") resetGame();
+  state = "running";
+  start.textContent = "PAUSE";
+  status.textContent = "Use the arrow keys or buttons.";
+  timer = setInterval(tick, 180);
+});
+document.querySelector("#game-exit").addEventListener("click", closeGame);
+document.querySelectorAll("[data-direction]").forEach(button => {
+  button.addEventListener("click", () => steer(button.dataset.direction));
+});
+document.addEventListener("keydown", event => {
+  if (game.hidden) return;
+  if (event.key === "Escape") {
+    event.preventDefault();
+    closeGame();
+  } else if (Object.hasOwn(directions, event.key)) {
+    event.preventDefault();
+    steer(event.key);
+  }
+});
+const workshop = document.querySelector("#workshop");
+const grid = document.querySelector("#level");
+const titleInput = document.querySelector("#level-title");
+const workshopStatus = document.querySelector("#workshop-status");
+const editorTools = document.querySelector("#editor-tools");
+const editActions = document.querySelector("#edit-actions");
+const testActions = document.querySelector("#test-actions");
+const levelFile = document.querySelector("#level-file");
+const workshopKey = "box-signal-micro-84-workshop";
+const width = 12;
+const tiles = {
+  ".": ["·", "Floor"], "#": ["■", "Wall"], "S": ["●", "Start"],
+  "*": ["◆", "Gem"], "!": ["×", "Trap"], "E": ["▣", "Exit"], "P": ["●", "Player"]
+};
+let layout = [
+  "############",
+  "#S...#....E#",
+  "#.##.#.###.#",
+  "#..*.#...*.#",
+  "###.##.##..#",
+  "#...!......#",
+  "#..*.......#",
+  "############"
+].join("").split("");
+let brush = "#";
+let testing = false;
+let testMap;
+let player;
+let gems;
+let ended;
+const cells = layout.map((_, index) => {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.addEventListener("click", () => paint(index));
+  grid.append(button);
+  return button;
+});
+
+function decodeLevel(value) {
+  if (value?.format !== "micro84-level-v1" || typeof value.title !== "string" ||
+      typeof value.map !== "string" || !/^[.#S*!E]{96}$/.test(value.map) ||
+      [...value.map].filter(tile => tile === "S").length !== 1 ||
+      [...value.map].filter(tile => tile === "E").length !== 1) {
+    throw new Error("Choose a Micro/84 level file with one start and one exit.");
+  }
+  return { title: value.title.trim().slice(0, 40) || "Untitled game", layout: [...value.map] };
+}
+function installLevel(value) {
+  const level = decodeLevel(value);
+  titleInput.value = level.title;
+  layout = level.layout;
+}
+try {
+  const saved = localStorage.getItem(workshopKey);
+  if (saved) installLevel(JSON.parse(saved));
+} catch {}
+function levelData() {
+  return { format: "micro84-level-v1", title: titleInput.value.trim() || "Untitled game", map: layout.join("") };
+}
+function drawLevel() {
+  cells.forEach((button, index) => {
+    const tile = testing ? (index === player ? "P" : testMap[index]) : layout[index];
+    button.dataset.tile = tile;
+    button.textContent = tiles[tile][0];
+    button.setAttribute("aria-label", tiles[tile][1] + ", row " + (Math.floor(index / width) + 1) +
+      ", column " + (index % width + 1));
+    button.tabIndex = testing ? -1 : 0;
+  });
+}
+function paint(index) {
+  if (testing) return;
+  const previous = layout.indexOf(brush);
+  if ((brush === "S" || brush === "E") && previous !== -1) layout[previous] = ".";
+  layout[index] = brush;
+  drawLevel();
+}
+function showWorkshopMode(isTest) {
+  testing = isTest;
+  editorTools.hidden = editActions.hidden = isTest;
+  testActions.hidden = !isTest;
+  drawLevel();
+}
+function openWorkshop() {
+  workshop.hidden = false;
+  terminal.hidden = output.hidden = true;
+  showEditor();
+}
+function showEditor() {
+  showWorkshopMode(false);
+  workshopStatus.textContent = "Choose a tile, then tap the grid. Collect every gem to unlock the exit.";
+  titleInput.focus({preventScroll: true});
+}
+function closeWorkshop() {
+  workshop.hidden = true;
+  terminal.hidden = output.hidden = false;
+  input.focus();
+}
+function playLevel() {
+  const data = levelData();
+  try { decodeLevel(data); }
+  catch (error) { workshopStatus.textContent = error.message; return; }
+  testMap = [...layout];
+  player = testMap.indexOf("S");
+  testMap[player] = ".";
+  gems = testMap.filter(tile => tile === "*").length;
+  ended = false;
+  showWorkshopMode(true);
+  workshopStatus.textContent = data.title + " · Gems left " + gems;
+  document.querySelector("#retry-level").focus();
+}
+function movePlayer(key) {
+  if (ended) return;
+  const [dx, dy] = directions[key];
+  const x = player % width + dx;
+  const y = Math.floor(player / width) + dy;
+  if (x < 0 || x >= width || y < 0 || y >= layout.length / width) return;
+  const target = y * width + x;
+  const tile = testMap[target];
+  if (tile === "#") return;
+  if (tile === "E" && gems) {
+    workshopStatus.textContent = "Exit locked. Gems left " + gems;
+    return;
+  }
+  player = target;
+  if (tile === "*") {
+    gems--;
+    testMap[target] = ".";
+  }
+  drawLevel();
+  ended = tile === "E" || tile === "!";
+  workshopStatus.textContent = tile === "E" ? "You escaped!" :
+    tile === "!" ? "You hit a trap. Press RETRY to try again." : "Gems left " + gems;
+}
+document.querySelectorAll("[data-brush]").forEach(button => {
+  button.addEventListener("click", () => {
+    document.querySelector('[data-brush][aria-pressed="true"]').setAttribute("aria-pressed", "false");
+    button.setAttribute("aria-pressed", "true");
+    brush = button.dataset.brush;
+  });
+});
+document.querySelectorAll("[data-step]").forEach(button => {
+  button.addEventListener("click", () => movePlayer(button.dataset.step));
+});
+document.querySelector("#test-level").addEventListener("click", playLevel);
+document.querySelector("#retry-level").addEventListener("click", playLevel);
+document.querySelector("#edit-level").addEventListener("click", showEditor);
+document.querySelector("#quit-workshop").addEventListener("click", closeWorkshop);
+document.querySelector("#save-level").addEventListener("click", () => {
+  try {
+    const data = levelData();
+    decodeLevel(data);
+    localStorage.setItem(workshopKey, JSON.stringify(data));
+    workshopStatus.textContent = "Saved this game in your browser.";
+  } catch {
+    workshopStatus.textContent = "Save needs one start, one exit and browser storage. Use EXPORT to keep a file.";
+  }
+});
+document.querySelector("#export-level").addEventListener("click", () => {
+  const data = levelData();
+  try { decodeLevel(data); }
+  catch (error) { workshopStatus.textContent = error.message; return; }
+  const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], {type: "application/json"}));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = (data.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "micro84-game") + ".micro84.json";
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+document.querySelector("#import-level").addEventListener("click", () => levelFile.click());
+levelFile.addEventListener("change", async () => {
+  const file = levelFile.files[0];
+  levelFile.value = "";
+  if (!file) return;
+  try {
+    if (file.size > 8192) throw new Error("Level file too large.");
+    installLevel(JSON.parse(await file.text()));
+    drawLevel();
+    workshopStatus.textContent = "Imported " + titleInput.value + ".";
+  } catch {
+    workshopStatus.textContent = "That file is not a valid Micro/84 game.";
+  }
+});
+document.addEventListener("keydown", event => {
+  if (workshop.hidden) return;
+  if (testing && Object.hasOwn(directions, event.key)) {
+    event.preventDefault();
+    movePlayer(event.key);
+  }
+  if (event.key === "Escape") {
+    event.preventDefault();
+    if (testing) showEditor();
+    else closeWorkshop();
+  }
+});
+boot();
+</script>
+</html>
