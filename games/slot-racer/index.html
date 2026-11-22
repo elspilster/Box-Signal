@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en-GB">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Box Signal Slot Racer</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#121714;color:#f4eedf;font:16px system-ui}main{max-width:920px;margin:auto;padding:24px 16px}header{display:flex;align-items:end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px}h1{margin:0;font-size:clamp(32px,7vw,64px);line-height:.95;letter-spacing:-.07em}.brand{font:700 12px monospace;letter-spacing:.23em;color:#ffc456;margin-bottom:8px}.score{display:flex;gap:18px;font:700 15px monospace}.you{color:#ffc456}.cpu{color:#6ce2ed}.board{position:relative;border:1px solid #56634e;border-radius:16px;overflow:hidden;background:#24392c}canvas{display:block;width:100%;height:auto}.overlay{position:absolute;inset:0;display:grid;place-content:center;text-align:center;background:#13221994}.overlay[hidden]{display:none}.panel{background:#141a17f2;border:1px solid #646c5b;border-radius:14px;padding:clamp(12px,3vw,28px);margin:10px}.panel h2{margin:0 0 8px;font-size:clamp(22px,5vw,38px)}.panel p{margin:0 0 14px;color:#e0e5d4}button{background:#ffc456;color:#151914;border:0;padding:12px 20px;border-radius:8px;font:800 15px system-ui;cursor:pointer;touch-action:none}button:focus-visible{outline:3px solid white;outline-offset:3px}button:disabled{opacity:.5;cursor:default}.controls{display:flex;align-items:center;gap:14px;margin-top:12px;flex-wrap:wrap}.controls button{min-width:140px;user-select:none}.controls button[aria-pressed=true]{background:#fff3cf}.controls p{margin:0;color:#d0d6c7;font-size:14px;flex:1;min-width:200px}#state{min-width:100px;text-align:right;font:700 14px monospace}
+</style>
+<main>
+<nav aria-label="Games" style="margin-bottom:16px"><a href="/games/" style="color:#ffc456">← Box Signal Games</a></nav>
+<header><div><div class="brand">BOX SIGNAL</div><h1>Slot Racer</h1></div><div class="score"><span class="you" id="you">YOU 0/5</span><span class="cpu" id="cpu">CPU 0/5</span></div></header>
+<div class="board">
+<canvas id="track" width="900" height="480" aria-label="Oval slot-car track with an amber player car and a cyan computer car"></canvas>
+<div id="overlay" class="overlay"><div class="panel"><h2 id="headline">Oval Sprint</h2><p id="message">Five laps. First across the line wins.</p><button id="start">Start race</button></div></div>
+</div>
+<div class="controls"><button id="throttle" aria-pressed="false" disabled>Hold throttle</button><p>Hold Space, ↑ or the throttle button to accelerate. Ease off at the striped bends.</p><span id="state" role="status">Ready</span></div>
+</main>
+<script>
+'use strict';
+const get=id=>document.getElementById(id);
+const canvas=get('track'), ctx=canvas.getContext('2d');
+const overlay=get('overlay'), start=get('start'), pedal=get('throttle');
+const straight=432, left=234, right=666, centre=240;
+const laps=5, maxSpeed=400, safeSpeed=256;
+const keys=new Set();
+let pointer=null, phase='ready', clock=0, previous=null;
+const cars=[{radius:144,colour:'#ffc456'},{radius:181,colour:'#6ce2ed'}];
+function locate(distance,r){
+  const arc=Math.PI*r, length=2*(straight+arc);
+  let s=((distance%length)+length)%length;
+  if(s<straight)return {x:left+s,y:centre-r,angle:0,bend:false,until:straight-s};
+  s-=straight;
+  if(s<arc){const a=s/r;return {x:right+r*Math.sin(a),y:centre-r*Math.cos(a),angle:a,bend:true};}
+  s-=arc;
+  if(s<straight)return {x:right-s,y:centre+r,angle:Math.PI,bend:false,until:straight-s};
+  const a=(s-straight)/r;
+  return {x:left-r*Math.sin(a),y:centre+r*Math.cos(a),angle:Math.PI+a,bend:true};
+}
+function oval(g,r){
+  g.beginPath();g.moveTo(left,centre-r);g.lineTo(right,centre-r);
+  g.arc(right,centre,r,-Math.PI/2,Math.PI/2);g.lineTo(left,centre+r);
+  g.arc(left,centre,r,Math.PI/2,Math.PI*1.5);g.closePath();
+}
+const scenery=document.createElement('canvas');scenery.width=900;scenery.height=480;
+const g=scenery.getContext('2d');
+g.fillStyle='#263d30';g.fillRect(0,0,900,480);
+for(let y=0;y<480;y+=34){g.fillStyle=y%68?'#2e4836':'#304d39';g.fillRect(0,y,900,17);}
+let noise=79;
+function random(){noise=(1664525*noise+1013904223)>>>0;return noise/4294967296;}
+for(let i=0;i<4800;i++){
+  g.fillStyle=i%2?'#ffffff0f':'#00000021';
+  g.fillRect(random()*900,random()*480,1+random()*3,1);
+}
+function stroke(r,width,colour){oval(g,r);g.lineWidth=width;g.strokeStyle=colour;g.stroke();}
+stroke(162.5,86,'#142018');stroke(162.5,77,'#5d6259');stroke(162.5,70,'#303431');
+for(const car of cars){stroke(car.radius,4,'#111511');stroke(car.radius-3,1,'#7a8079');}
+g.setLineDash([13,12]);stroke(162.5,1.5,'#b5b8a7');g.setLineDash([]);
+for(const radius of [128,197]){
+  for(const [x,angle] of [[right,-Math.PI/2],[left,Math.PI/2]]){
+    for(let i=0;i<24;i++){
+      g.beginPath();g.arc(x,centre,radius,angle+i*Math.PI/24,angle+(i+1)*Math.PI/24);
+      g.lineWidth=5;g.strokeStyle=i%2?'#f2e9d7':'#c8523f';g.stroke();
+    }
+  }
+}
+for(let y=42;y<112;y+=7)for(let x=0;x<2;x++){
+  g.fillStyle=(Math.round((y-42)/7)+x)%2?'#eeeeDF':'#171a17';g.fillRect(left-7+x*7,y,7,7);
+}
+g.textAlign='center';g.fillStyle='#dce1c5';g.font='700 16px monospace';g.fillText('BOX SIGNAL MOTOR CLUB',450,219);
+g.fillStyle='#f8e8c8';g.font='900 48px system-ui';g.fillText('OVAL SPRINT',450,273);
+function paintCar(car){
+  const p=locate(car.distance,car.radius);
+  ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.angle);
+  if(car.recovery>0){ctx.translate(0,Math.sin(car.recovery*3)*15);ctx.rotate(Math.sin(car.recovery*3)*.7);}
+  ctx.fillStyle='#0008';ctx.fillRect(-17,-9,39,22);
+  ctx.fillStyle='#101411';
+  for(const x of [-13,9])for(const y of [-11,7])ctx.fillRect(x,y,8,4);
+  ctx.fillStyle=car.colour;ctx.beginPath();ctx.roundRect(-19,-9,38,18,5);ctx.fill();
+  ctx.fillStyle='#212d30';ctx.beginPath();ctx.moveTo(8,-6);ctx.lineTo(11,0);ctx.lineTo(8,6);ctx.lineTo(-7,6);ctx.lineTo(-7,-6);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#eaf7e97c';ctx.fillRect(5,-5,2,10);
+  ctx.fillStyle='#fff6d5';ctx.fillRect(15,-6,3,4);ctx.fillRect(15,2,3,4);
+  ctx.fillStyle='#db4136';ctx.fillRect(-19,-6,3,4);ctx.fillRect(-19,2,3,4);
+  ctx.restore();
+}
+function held(){return keys.size>0||pointer!==null;}
+function reset(){
+  for(const car of cars)Object.assign(car,{distance:0,speed:0,recovery:0,length:2*straight+2*Math.PI*car.radius});
+}
+function move(car,dt,index){
+  if(car.recovery>0){car.recovery=Math.max(0,car.recovery-dt);return null;}
+  const p=locate(car.distance,car.radius);
+  if(index===0){
+    car.speed=held()?Math.min(maxSpeed,car.speed+305*dt):Math.max(0,car.speed-480*dt);
+    if(p.bend&&car.speed>safeSpeed){car.speed=0;car.recovery=1.05;return null;}
+  }else{
+    const target=p.bend?226+10*Math.sin(clock*.6):Math.min(338,Math.sqrt(235**2+2*410*p.until));
+    car.speed+=Math.max(-480*dt,Math.min(270*dt,target-car.speed));
+  }
+  const remaining=car.length*laps-car.distance;
+  const step=car.speed*dt;
+  car.distance+=Math.min(remaining,step);
+  return step>0&&step>=remaining?remaining/step:null;
+}
+function show(node,text){if(node.textContent!==text)node.textContent=text;}
+function finish(winner){
+  phase='finished';keys.clear();pointer=null;pedal.disabled=true;
+  show(get('headline'),winner===0?'You win!':'Computer wins');
+  show(get('message'),clock.toFixed(1)+' seconds · 5-lap Oval Sprint');
+  show(start,'Race again');overlay.hidden=false;start.focus();
+}
+start.onclick=()=>{
+  reset();clock=-3;phase='countdown';overlay.hidden=true;pedal.disabled=false;
+  canvas.focus();
+};
+const throttleKeys=['Space','ArrowUp'];
+window.addEventListener('keydown',e=>{
+  if(!throttleKeys.includes(e.code)||phase==='ready'||phase==='finished')return;
+  e.preventDefault();keys.add(e.code);
+});
+window.addEventListener('keyup',e=>keys.delete(e.code));
+window.addEventListener('blur',()=>{keys.clear();pointer=null;});
+pedal.addEventListener('pointerdown',e=>{
+  if(pointer!==null)return;
+  pointer=e.pointerId;pedal.setPointerCapture(pointer);
+});
+for(const event of ['pointerup','pointercancel','lostpointercapture'])
+  pedal.addEventListener(event,e=>{if(e.pointerId===pointer)pointer=null;});
+function frame(now){
+  const dt=previous===null?0:Math.min(.035,(now-previous)/1000);
+  previous=now;
+  if(phase==='countdown'){
+    clock+=dt;
+    if(clock>=0){phase='race';clock=0;}
+  }else if(phase==='race'){
+    const times=cars.map((car,index)=>move(car,dt,index));
+    if(times.some(t=>t!==null)){
+      const winner=(times[0]??Infinity)<=(times[1]??Infinity)?0:1;
+      clock+=dt*times[winner];finish(winner);
+    }else clock+=dt;
+  }
+  const player=cars[0], road=locate(player.distance,player.radius);
+  show(get('you'),'YOU '+Math.floor((player.distance+1e-7)/player.length)+'/5');
+  show(get('cpu'),'CPU '+Math.floor((cars[1].distance+1e-7)/cars[1].length)+'/5');
+  let status='Ready';
+  if(phase==='countdown')status='Starts in '+Math.ceil(-clock);
+  if(phase==='finished')status='Race over';
+  if(phase==='race')status=player.recovery>0?'Off the slot!':
+    (road.bend||road.until<110)&&player.speed>235?'Ease off!':clock<1?'Go!':clock.toFixed(1)+' s';
+  show(get('state'),status);
+  pedal.setAttribute('aria-pressed',String(held()));
+  ctx.drawImage(scenery,0,0);cars.forEach(paintCar);
+  requestAnimationFrame(frame);
+}
+reset();requestAnimationFrame(frame);
+</script>
+</html>
