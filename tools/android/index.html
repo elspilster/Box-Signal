@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Android 4.4 · Box Signal</title>
+<meta name="description" content="Boot Android 4.4 in your browser with the v86 emulator.">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101618;color:#e9efeb;font:16px/1.5 system-ui,sans-serif}
+main{width:min(1120px,100% - 32px);margin:32px auto}
+nav{display:flex;gap:16px;flex-wrap:wrap;font-size:.85rem}
+a{color:#b8ea9f;text-underline-offset:4px}
+h1{font-size:clamp(2.3rem,7vw,4.6rem);letter-spacing:-.06em;line-height:1;margin:28px 0 12px}
+p{color:#c0ccc5;margin:0 0 18px}
+.controls{display:flex;gap:12px 20px;align-items:center;flex-wrap:wrap;margin:22px 0}
+button{font:700 1rem system-ui;padding:10px 16px;border-radius:6px;border:0;background:#c4efa9;color:#162213;cursor:pointer}
+iframe{display:block;width:100%;height:clamp(540px,78dvh,940px);border:1px solid #576b60;border-radius:9px;background:#fff}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+<nav aria-label="Box Signal navigation"><a href="/">Box Signal</a><a href="/tools/">Tools</a></nav>
+<h1>Android 4.4</h1>
+<p>Boot Android-x86 KitKat in your browser using v86. The first boot may take a moment while the system image downloads.</p>
+<div class="controls">
+<button type="button" id="boot" aria-controls="emulator" aria-expanded="false">Boot Android</button>
+<a id="pop-out" href="https://copy.sh/v86/?profile=android4" target="_blank" rel="noopener noreferrer">Open emulator in a new tab ↗</a>
+</div>
+<iframe id="emulator" title="Android 4.4 x86 emulator by v86" allow="fullscreen; autoplay" hidden></iframe>
+<noscript><p>Use the new-tab link to launch the emulator with JavaScript enabled.</p></noscript>
+</main>
+<script>
+const boot = document.querySelector('#boot');
+const emulator = document.querySelector('#emulator');
+boot.addEventListener('click', () => {
+  if (emulator.hidden) {
+    emulator.src = document.querySelector('#pop-out').href;
+    emulator.hidden = false;
+    boot.textContent = 'Stop Android';
+  } else {
+    emulator.hidden = true;
+    emulator.removeAttribute('src');
+    boot.textContent = 'Boot Android';
+  }
+  boot.setAttribute('aria-expanded', String(!emulator.hidden));
+});
+</script>
+</body>
+</html>
