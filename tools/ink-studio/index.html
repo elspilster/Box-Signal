@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ink Studio | Box Signal</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#e9e5da;color:#24231e;font:16px system-ui,sans-serif}header{border-top:6px solid #b8432d;border-bottom:1px solid #c5beaa;padding:24px max(20px,calc((100% - 1220px)/2))}header p{margin:0;color:#8d3222;font:700 12px monospace;letter-spacing:.2em}h1{font:normal clamp(43px,8vw,76px)/1 Georgia,serif;margin:4px 0}main{width:min(1220px,94vw);margin:24px auto;display:grid;grid-template-columns:235px minmax(0,1fr);gap:20px}aside,.desk{background:#f7f4eb;border:1px solid #cac2ae;padding:18px}aside{align-self:start}label,legend{font-weight:650}select,input[type=range]{display:block;width:100%;margin:7px 0 17px;accent-color:#a13a28}select,button,.pick{font:inherit;border:1px solid #a19a88;border-radius:4px;padding:9px;background:#fffdf7;color:inherit}button,.pick{cursor:pointer}button:disabled{opacity:.5;cursor:default}.pick,#save{display:block;background:#26251f;color:#fff;text-align:center;width:100%;margin-bottom:10px}.pick:focus-within{outline:2px solid #ac3e29;outline-offset:3px}.pick input{position:absolute;opacity:0;width:1px;height:1px}.desk{min-height:310px}.desk.drag{outline:3px dashed #a13a28;outline-offset:-7px}#empty{display:grid;place-content:center;min-height:270px;text-align:center;color:#565145;border:1px dashed #aaa18b;padding:16px}#status{font-size:13px;color:#62594a;overflow-wrap:anywhere}.views{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.views[hidden],#empty[hidden]{display:none}figure{margin:0;min-width:0}figcaption{margin-bottom:8px;font:700 12px monospace;letter-spacing:.09em;text-transform:uppercase}canvas{display:block;max-width:100%;max-height:72vh;width:auto;height:auto;margin:0 auto;box-shadow:0 3px 12px #291f1a27;background:#fff}output{float:right;color:#752b1d}@media(max-width:720px){main{grid-template-columns:1fr}.views{gap:10px}.desk{min-height:0}#empty{min-height:150px}}
+</style>
+</head>
+<body>
+<header><a href="/tools/" style="color:#752b1d;display:inline-block;margin-bottom:10px">← Box Signal Tools</a><p>BOX SIGNAL</p><h1>Ink Studio</h1></header>
+<main>
+<aside>
+<label class="pick">Open image<input id="file" type="file" accept="image/*"></label>
+<label for="style">Sketch style</label>
+<select id="style"><option value="hatch">Cross-hatched pen</option><option value="line">Fine line</option><option value="ink">Bold ink</option></select>
+<label for="lines">Line strength <output id="lines-value" for="lines">60</output></label>
+<input type="range" id="lines" min="0" max="100" value="60">
+<label for="shade">Shading <output id="shade-value" for="shade">50</output></label>
+<input type="range" id="shade" min="0" max="100" value="50">
+<label for="paper">Paper</label>
+<select id="paper"><option value="ivory">Ivory grain</option><option value="white">Plain white</option></select>
+<button id="save" disabled>Save PNG</button>
+<p id="status" role="status">Images are processed on this device.</p>
+</aside>
+<section class="desk" aria-label="Image preview">
+<div id="empty">Drop a photo here or choose <strong>Open image</strong>.</div>
+<div class="views" hidden>
+<figure><figcaption>Original</figcaption><canvas id="source" role="img" aria-label="Original image"></canvas></figure>
+<figure><figcaption>Ink sketch</figcaption><canvas id="result" role="img" aria-label="Black ink sketch"></canvas></figure>
+</div>
+</section>
+</main>
+<script>
+'use strict';
+const byId = id => document.getElementById(id);
+const source = byId('source'), result = byId('result');
+const original = source.getContext('2d', {willReadFrequently:true});
+const sketch = result.getContext('2d');
+const status = byId('status'), save = byId('save');
+const lines = byId('lines'), shade = byId('shade'), style = byId('style'), paper = byId('paper');
+let layers, pending, loadId = 0, filename = 'sketch';
+const clamp = value => Math.max(0, Math.min(1, value));
+
+// Two passes of a sliding box filter keep processing time linear in pixel count.
+function blur(input, width, height, radius) {
+  const horizontal = new Float32Array(input.length), output = new Float32Array(input.length);
+  const span = radius * 2 + 1;
+  for (let y = 0; y < height; y++) {
+    const row = y * width;
+    let total = 0;
+    for (let k = -radius; k <= radius; k++) total += input[row + Math.max(0, Math.min(width - 1, k))];
+    for (let x = 0; x < width; x++) {
+      horizontal[row+x] = total / span;
+      total += input[row+Math.min(width-1,x+radius+1)] - input[row+Math.max(0,x-radius)];
+    }
+  }
+  for (let x = 0; x < width; x++) {
+    let total = 0;
+    for (let k = -radius; k <= radius; k++) total += horizontal[Math.max(0,Math.min(height-1,k))*width+x];
+    for (let y = 0; y < height; y++) {
+      output[y*width+x] = total / span;
+      total += horizontal[Math.min(height-1,y+radius+1)*width+x] - horizontal[Math.max(0,y-radius)*width+x];
+    }
+  }
+  return output;
+}
+
+function analyse(rgba, width, height) {
+  const grey = new Float32Array(width * height);
+  for (let i=0,j=0; i<grey.length; i++,j+=4) grey[i]=(rgba[j]*.2126+rgba[j+1]*.7152+rgba[j+2]*.0722)/255;
+  const scale = Math.max(1,Math.max(width,height)/1000);
+  const fine = blur(grey,width,height,Math.round(scale));
+  const tone = blur(fine,width,height,Math.round(scale*3));
+  const broad = blur(tone,width,height,Math.round(scale*6));
+  return {grey,fine,tone,broad,width,height,scale};
+}
+
+function render() {
+  if (!layers) return;
+  const {grey,fine,tone,broad,width,height,scale} = layers;
+  const image = sketch.createImageData(width,height), pixels = image.data;
+  const strength = Number(lines.value)/100, shading = Number(shade.value)/100;
+  const mode = style.value, ivory = paper.value === 'ivory';
+  const pitch = Math.max(3, Math.round(7*scale));
+  let seed = 71;
+  for (let y=0,i=0,j=0; y<height; y++) {
+    for (let x=0; x<width; x++,i++,j+=4) {
+      seed = (Math.imul(seed,1664525)+1013904223)>>>0;
+      const grain = (seed>>>28)/15;
+      const edge = Math.max(0,tone[i]-fine[i])*6 + Math.max(0,broad[i]-tone[i])*2 + Math.max(0,fine[i]-grey[i])*2;
+      let ink = clamp((edge-.025)*strength*(mode==='ink'?4.8:3.6));
+      const shadow = 1-tone[i];
+      if (mode === 'hatch') {
+        const waviness = .55*Math.sin(x/(16*scale)) + .45*Math.sin(y/(13*scale));
+        const a = ((x+y*.82+waviness)%pitch)/pitch;
+        const b = ((x+(height-y)*.93-waviness)%(pitch+2))/(pitch+2);
+        const first = clamp((shadow-(.64-.39*shading))*3);
+        const second = clamp((shadow-(.91-.36*shading))*4);
+        const hatch = Math.max(clamp((first*.34-a)*10),clamp((second*.33-b)*10));
+        ink = Math.max(ink,hatch*clamp(shading*2)*.91);
+      } else {
+        const threshold = mode==='ink'?.56:.82;
+        ink = Math.max(ink,clamp((shadow-threshold+shading*.22)*5)*clamp(shading*2));
+      }
+      const base = ivory ? 252-6*grain : 255;
+      pixels[j] = base*(1-ink);
+      pixels[j+1] = (base-(ivory?3:0))*(1-ink);
+      pixels[j+2] = (base-(ivory?11:0))*(1-ink);
+      pixels[j+3]=255;
+    }
+  }
+  sketch.putImageData(image,0,0);
+}
+
+async function openImage(file) {
+  if (!file) return;
+  const id = ++loadId;
+  const url = URL.createObjectURL(file);
+  status.textContent = 'Opening image…';
+  save.disabled = true;
+  try {
+    const image = new Image();
+    image.src = url;
+    await image.decode();
+    if (id !== loadId) return;
+    const ratio = Math.min(1,2000/Math.max(image.naturalWidth,image.naturalHeight));
+    const width = Math.max(1,Math.round(image.naturalWidth*ratio));
+    const height = Math.max(1,Math.round(image.naturalHeight*ratio));
+    source.width = result.width = width;
+    source.height = result.height = height;
+    original.fillStyle='#fff';
+    original.fillRect(0,0,width,height);
+    original.drawImage(image,0,0,width,height);
+    layers = analyse(original.getImageData(0,0,width,height).data,width,height);
+    filename = file.name.replace(/\.[^.]+$/, '') || 'sketch';
+    render();
+    byId('empty').hidden = true;
+    document.querySelector('.views').hidden = false;
+    status.textContent = file.name + ' · ' + width + ' × ' + height + ' px';
+  } catch {
+    if (id === loadId) status.textContent = 'Could not open this image. Try a JPG, PNG or WebP.';
+  } finally {
+    URL.revokeObjectURL(url);
+    if (id === loadId) save.disabled = !layers;
+  }
+}
+
+byId('file').addEventListener('change', event => {
+  openImage(event.target.files[0]);
+  event.target.value = '';
+});
+const desk = document.querySelector('.desk');
+desk.addEventListener('dragover', event => {event.preventDefault();desk.classList.add('drag');});
+desk.addEventListener('dragleave', event => {if(!desk.contains(event.relatedTarget))desk.classList.remove('drag');});
+desk.addEventListener('drop', event => {event.preventDefault();desk.classList.remove('drag');openImage(event.dataTransfer.files[0]);});
+for (const control of [lines,shade,style,paper]) {
+  control.addEventListener('input', () => {
+    byId('lines-value').value=lines.value;
+    byId('shade-value').value=shade.value;
+    cancelAnimationFrame(pending);
+    pending=requestAnimationFrame(render);
+  });
+}
+save.addEventListener('click', () => {
+  cancelAnimationFrame(pending);
+  render();
+  const name=filename;
+  result.toBlob(blob => {
+    if (!blob) {status.textContent='Could not export the sketch.';return;}
+    const link=document.createElement('a');
+    link.href=URL.createObjectURL(blob);
+    link.download=name+'-ink.png';
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(()=>URL.revokeObjectURL(link.href),30000);
+  },'image/png');
+});
+</script>
+</body>
+</html>
