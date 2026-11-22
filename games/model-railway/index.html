@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en-GB"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Model Railway · Box Signal</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#191f1c;color:#f3e9d4;font:16px system-ui}
+main{width:min(980px,100% - 24px);margin:32px auto}header{display:flex;justify-content:space-between;align-items:end;gap:8px;margin-bottom:14px}h1{font-size:clamp(25px,6vw,52px);letter-spacing:-.055em;line-height:1;margin:0}header span{font:bold 12px monospace;color:#f0cf81}
+canvas{display:block;width:100%;height:auto;border:7px solid #8b5f3c;border-radius:12px;box-shadow:0 10px 30px #0008}
+section{margin-top:16px;padding:13px;background:#2c3530;border-radius:9px;display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+button{min-height:44px;background:#171e19;color:#f3e9d4;border:1px solid #798475;border-radius:6px;padding:8px;font-weight:bold;cursor:pointer}button[aria-pressed=true]{background:#f0cf81;color:#241c13}label{display:flex;gap:8px;align-items:center}input{accent-color:#f0cf81;width:120px}p{font-size:14px;color:#c9d1c5}
+</style>
+<main><header><h1>Model Railway</h1><span>BOX SIGNAL</span></header>
+<canvas width="900" height="480" aria-label="Model train running on a figure-of-eight track with a wooden bridge"></canvas>
+<section aria-label="Train controller"><button data-direction="-1" aria-pressed="false">◀ Reverse</button><button data-direction="0" aria-pressed="true">■ Stop</button><button data-direction="1" aria-pressed="false">Forward ▶</button><label>Throttle <input id="speed" type="range" min="0" max="100" value="45"><output id="percent" for="speed">45%</output></label></section>
+<p>Keyboard: ← Reverse · → Forward · Space Stop</p></main>
+<script>
+"use strict";
+const canvas = document.querySelector("canvas");
+const ctx = canvas.getContext("2d");
+const speed = document.querySelector("#speed");
+const buttons = [...document.querySelectorAll("[data-direction]")];
+const track = [];
+let length = 0;
+for (let i=0; i<=1200; i++) {
+  const t=i*Math.PI/600, x=450+335*Math.sin(t), y=240+128*Math.sin(2*t);
+  const prev=track.at(-1);
+  if(prev) length+=Math.hypot(x-prev.x,y-prev.y);
+  track.push({x,y,d:length,angle:Math.atan2(256*Math.cos(2*t),335*Math.cos(t))});
+}
+function wrap(d) { return ((d%length)+length)%length; }
+function point(d) {
+  d=wrap(d);
+  let lo=0, hi=track.length-1;
+  while(hi-lo>1) {
+    const mid=(hi+lo)>>1;
+    if(track[mid].d<=d) lo=mid;
+    else hi=mid;
+  }
+  const a=track[lo], b=track[hi], f=(d-a.d)/(b.d-a.d);
+  return {x:a.x+(b.x-a.x)*f,y:a.y+(b.y-a.y)*f,angle:a.angle};
+}
+function line(c,start,end,offset=0,drop=0) {
+  const steps=Math.ceil((end-start)/3);
+  c.beginPath();
+  for(let i=0;i<=steps;i++) {
+    const {x,y,angle}=point(start+(end-start)*i/steps);
+    const px=x-offset*Math.sin(angle), py=y+offset*Math.cos(angle)+drop;
+    if(i===0) c.moveTo(px,py);
+    else c.lineTo(px,py);
+  }
+}
+function stroke(c,width,colour) {
+  c.lineWidth=width;
+  c.strokeStyle=colour;
+  c.stroke();
+}
+function rails(c,start,end,raised=false) {
+  line(c,start,end,0,raised?12:3);
+  stroke(c,raised?45:33,"#28302788");
+  line(c,start,end);
+  stroke(c,raised?34:28,raised?"#755338":"#79776a");
+  for(let d=Math.ceil(start/11)*11;d<end;d+=11) {
+    const p=point(d);
+    c.save();c.translate(p.x,p.y);c.rotate(p.angle);
+    c.fillStyle="#483327";c.fillRect(-2,-12,4,24);
+    c.restore();
+  }
+  for(const side of [-7,7]) {
+    line(c,start,end,side);stroke(c,4,"#363733");stroke(c,1.5,"#dad7bd");
+  }
+}
+function layer() {
+  const image=document.createElement("canvas");
+  image.width=canvas.width; image.height=canvas.height;
+  return image;
+}
+function ellipse(c,x,y,rx,ry,colour) {
+  c.fillStyle=colour;c.beginPath();c.ellipse(x,y,rx,ry,0,0,Math.PI*2);c.fill();
+}
+const landscape=layer(), grass=landscape.getContext("2d");
+const green=grass.createLinearGradient(0,0,900,480);
+green.addColorStop(0,"#95a56b");green.addColorStop(1,"#536d45");
+grass.fillStyle=green;grass.fillRect(0,0,900,480);
+let seed=83;
+function random() {
+  seed=(Math.imul(seed,1664525)+1013904223)>>>0;
+  return seed/4294967296;
+}
+for(let i=0;i<4000;i++) {
+  grass.fillStyle=i%2?"#ffffd31b":"#182e2320";
+  grass.fillRect(random()*900,random()*480,1+random()*3,1+random()*2);
+}
+ellipse(grass,678,241,64,47,"#b1b280");
+ellipse(grass,677,240,59,42,"#528a89");
+ellipse(grass,657,225,20,2,"#a9cebe");
+ellipse(grass,700,254,17,1,"#a9cebe");
+for(const [x,y,w,h] of [[217,214,67,39],[271,271,39,24],[182,280,35,24]]) {
+  grass.fillStyle="#2c422d77";grass.fillRect(x+7,y+7,w,h);
+  grass.fillStyle="#dac18d";grass.fillRect(x,y,w,h);
+  grass.fillStyle="#97503b";grass.fillRect(x-3,y-4,w+6,h-4);
+  grass.fillStyle="#c98058";grass.fillRect(x-3,y-4,w+6,(h-4)/2);
+  grass.fillStyle="#685448";grass.fillRect(x+8,y+h-9,8,9);
+}
+for(const [x,y] of [[49,96],[78,114],[53,155],[102,67],[134,85],[46,345],[85,387],[108,415],[148,439],[786,64],[827,92],[864,68],[842,144],[860,349],[821,395],[785,434],[824,367],[364,417],[400,441],[573,58],[533,77],[293,54],[324,69],[308,244],[180,208]]) {
+  const r=10+random()*8;
+  ellipse(grass,x+6,y+7,r,r*.85,"#263d2955");
+  ellipse(grass,x,y,r,r,"#354f36");
+  ellipse(grass,x-3,y-4,r*.78,r*.78,"#57784b");
+  ellipse(grass,x-5,y-6,r*.44,r*.44,"#789756");
+}
+rails(grass,0,length);
+const bridge=layer(), deck=bridge.getContext("2d");
+rails(deck,-61,61,true);
+for(const side of [-17,17]) {
+  line(deck,-61,61,side,3);stroke(deck,6,"#443426");
+  line(deck,-61,61,side);stroke(deck,4,"#d7b272");
+}
+const cars=[{offset:0,colour:"#ae4939"},{offset:38,colour:"#345e52"},{offset:76,colour:"#345e52"}];
+function drawCar(car,p) {
+  ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.angle);
+  ctx.fillStyle="#20302299";ctx.fillRect(-17,-7,37,19);
+  ctx.fillStyle="#262a23";ctx.fillRect(-18,-9,36,18);
+  ctx.fillStyle=car.colour;ctx.fillRect(-16,-8,32,16);
+  ctx.fillStyle="#e1ce9d";
+  if(car.offset===0) {
+    ctx.fillRect(-13,-6,11,12);
+    ctx.fillStyle="#693b2e";ctx.fillRect(0,-5,14,10);
+    ellipse(ctx,8,0,3,3,"#282523");
+    ctx.fillStyle="#fff4a4";ctx.fillRect(15,-2,3,4);
+  } else {
+    ctx.fillRect(-13,-6,26,12);
+    ctx.fillStyle="#597671";
+    for(let x=-11;x<11;x+=5) ctx.fillRect(x,-4,3,8);
+  }
+  ctx.restore();
+}
+let distance=770, direction=0, velocity=0, last;
+function setDirection(value) {
+  direction=value;
+  buttons.forEach(button=>button.setAttribute("aria-pressed",String(Number(button.dataset.direction)===value)));
+}
+buttons.forEach(button=>button.addEventListener("click",()=>setDirection(Number(button.dataset.direction))));
+speed.addEventListener("input",()=>document.querySelector("#percent").value=speed.value+"%");
+document.addEventListener("keydown",event=>{
+  if(event.target.closest("input")||event.altKey||event.ctrlKey||event.metaKey) return;
+  if(event.code==="Space"&&event.target.closest("button")) return;
+  const commands={ArrowLeft:-1,ArrowRight:1,Space:0};
+  if(!Object.hasOwn(commands,event.code)) return;
+  event.preventDefault();setDirection(commands[event.code]);
+});
+function frame(now) {
+  const elapsed=Math.min(.05,(now-(last??now))/1000);
+  last=now;
+  const target=direction*Number(speed.value)*2.5;
+  const change=elapsed*(direction===0?600:220);
+  velocity+=Math.max(-change,Math.min(change,target-velocity));
+  distance=wrap(distance+velocity*elapsed);
+  ctx.drawImage(landscape,0,0);
+  const positions=cars.map(car=>{
+    const d=wrap(distance-car.offset);
+    return {car,p:point(d),onBridge:d<61||d>length-61};
+  });
+  for(const item of positions) if(!item.onBridge) drawCar(item.car,item.p);
+  ctx.drawImage(bridge,0,0);
+  for(const item of positions) if(item.onBridge) drawCar(item.car,item.p);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script></html>
