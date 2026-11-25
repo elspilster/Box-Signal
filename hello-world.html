@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hello World | Box Signal</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #151021;
+      font-family: Consolas, "Courier New", monospace;
+    }
+    .monitor {
+      box-sizing: border-box;
+      width: min(92vw, 580px);
+      padding: 22px;
+      background: #cfba95;
+      border: 4px outset #f3deb7;
+      border-radius: 20px;
+      box-shadow: 8px 12px 0 #090611;
+    }
+    .screen {
+      min-height: 230px;
+      display: grid;
+      place-items: center;
+      border: 7px inset #887968;
+      border-radius: 14px;
+      background: repeating-linear-gradient(#0d2519 0 2px, #0a1e15 2px 4px);
+      color: #b3ff9a;
+      font-size: clamp(20px, 5vw, 38px);
+      text-shadow: 0 0 12px #68ff78;
+    }
+    .line { width: 12ch; white-space: pre; }
+    .cursor { animation: blink 1s steps(1) infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) {
+      .cursor { animation: none; }
+    }
+    button {
+      margin-top: 14px;
+      padding: 7px 12px;
+      background: #f3deb7;
+      color: #241b17;
+      font: inherit;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <main class="monitor">
+    <div class="screen" role="img" aria-label="A green terminal displaying Hello World">
+      <div class="line" aria-hidden="true"><span id="output">Hello World</span><span class="cursor">█</span></div>
+    </div>
+    <button id="run" type="button">Run again</button>
+  </main>
+
+  <script>
+    const message = 'Hello World';
+    const output = document.querySelector('#output');
+    const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+    let timer;
+
+    function run() {
+      clearTimeout(timer);
+      if (reducedMotion.matches) {
+        output.textContent = message;
+        return;
+      }
+
+      let position = 0;
+      output.textContent = '';
+
+      function typeNextLetter() {
+        position += 1;
+        output.textContent = message.slice(0, position);
+        timer = position < message.length
+          ? setTimeout(typeNextLetter, 110)
+          : setTimeout(run, 2800);
+      }
+
+      timer = setTimeout(typeNextLetter, 500);
+    }
+
+    document.querySelector('#run').addEventListener('click', run);
+    reducedMotion.addEventListener('change', run);
+    run();
+  </script>
+</body>
+</html>
