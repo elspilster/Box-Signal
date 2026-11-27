@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en-GB">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Midnight Relay · Box Signal</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#101715;color:#e0ede5;font:16px/1.55 system-ui,sans-serif}main{max-width:860px;margin:auto;padding:clamp(16px,5vw,48px)}a{color:#adf5bf}h1{margin:20px 0 6px;font-size:clamp(40px,8vw,70px);line-height:1;letter-spacing:-.065em}p{margin:0 0 20px}section{background:#07100c;border:1px solid #526c5c;border-radius:12px;padding:16px}#log{height:clamp(225px,44dvh,440px);overflow:auto;display:block;white-space:pre-wrap;overflow-wrap:anywhere;font:15px/1.55 ui-monospace,Consolas,monospace}.command{color:#adf5bf}form,.shortcuts{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}input,button{font:inherit;color:inherit;background:#18261e;border:1px solid #526c5c;border-radius:6px;padding:8px 12px}input{flex:1;min-width:120px}button{cursor:pointer}button:hover,:focus-visible{outline:2px solid #adf5bf;outline-offset:2px}
+</style>
+<main>
+<a href="/">Box Signal home</a>
+<h1>Midnight Relay</h1>
+<p>A storm has knocked out the station beacon. Restore it before the last train arrives.</p>
+<section aria-label="Game terminal">
+<div id="log" role="log" tabindex="0" aria-label="Game transcript"></div>
+<form id="terminal"><span aria-hidden="true">&gt;</span><input id="command" aria-label="Game command" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Type a command"><button>Run</button></form>
+<div class="shortcuts"><button data-command="look">Look</button><button data-command="map">Map</button><button data-command="inventory">Inventory</button><button data-command="help">Help</button><button data-command="restart">Restart</button></div>
+</section>
+</main>
+<script>
+'use strict';
+const rooms = {
+  platform:['Platform','The last train is due. A storm has knocked out the station beacon.',{north:'office', east:'workshop', west:'signalBox'}],
+  office:['Station Office','A handwritten note is pinned beside a key hook.',{south:'platform'}],
+  workshop:['Workshop','A cabinet with a three-digit keypad stands against the wall.',{west:'platform'}],
+  signalBox:['Signal Box','The beacon relay has a fuse socket and a large lever.',{east:'platform'}]
+};
+const log = document.querySelector('#log');
+const input = document.querySelector('#command');
+const help = 'look, map, inventory, north/south/east/west (or n/s/e/w)\nread note, take key, enter <code>, take fuse, use key, use fuse, pull lever\nrestart, help';
+const aliases = {n:'north', s:'south', e:'east', w:'west', i:'inventory'};
+let room, key, door, cabinet, fuse, fitted, won, confirmRestart;
+let history = [], historyIndex = 0;
+function say(text, style = '') {
+  const line = document.createElement('div');
+  line.className = style;
+  line.textContent = text;
+  log.append(line);
+  log.scrollTop = log.scrollHeight;
+}
+function look() {
+  const [title, description, exits] = rooms[room];
+  say('[' + title + ']\n' + description);
+  if (room === 'office' && !key) say('A brass key hangs from the hook.');
+  if (room === 'workshop' && cabinet) say(fuse || fitted ? 'The cabinet is open and empty.' : 'The cabinet is open. A spare fuse sits inside.');
+  if (room === 'signalBox' && fitted) say('The fuse is fitted. The lever is ready.');
+  say('Exits: ' + Object.keys(exits).join(', '));
+}
+function reset() {
+  room = 'platform';
+  key = door = cabinet = fuse = fitted = won = confirmRestart = false;
+  log.replaceChildren();
+  say('Type help for commands or n to head into the office.');
+  look();
+}
+function run(raw) {
+  const command = raw.trim().toLowerCase().replace(/\s+/g, ' ');
+  if (!command) return;
+  history.push(raw);
+  historyIndex = history.length;
+  say('> ' + raw, 'command');
+  if (confirmRestart) {
+    confirmRestart = false;
+    if (['y','yes'].includes(command)) return reset();
+    if (['n','no'].includes(command)) return say('Keep playing.');
+  }
+  if (command === 'restart') {
+    if (won) return reset();
+    confirmRestart = true;
+    return say('Start over? Type y or n.');
+  }
+  if (command === 'help') return say(help);
+  if (command === 'map') return say('               Station Office\n                     |\nSignal Box ------- Platform ------- Workshop');
+  if (command === 'inventory' || command === 'i') {
+    return say('Carrying: ' + ([key && 'key', fuse && 'fuse'].filter(Boolean).join(', ') || 'nothing'));
+  }
+  if (command === 'look') return look();
+  if (won) return say('You saved the last train. Type restart to play again.');
+  const heading = command.replace(/^go /, '');
+  const direction = aliases[heading] ?? heading;
+  if (['north','south','east','west'].includes(direction)) {
+    const destination = rooms[room][2][direction];
+    if (!destination) return say("There's no exit that way.");
+    if (destination === 'signalBox' && !door) return say('The signal box is locked. Try use key when you have one.');
+    room = destination;
+    return look();
+  }
+  if (room === 'office' && command === 'read note') return say('Cabinet code: Count the wheels on a bicycle, the sides of a square, and the legs of a spider. Enter those digits in that order.');
+  if (room === 'office' && command === 'take key') {
+    if (key) return say('You already have the key.');
+    key = true;
+    return say('You take the brass key.');
+  }
+  if (room === 'platform' && command === 'use key') {
+    if (!key) return say('You need a key.');
+    door = true;
+    return say('The key unlocks the signal box to the west.');
+  }
+  if (room === 'workshop' && command.startsWith('enter ')) {
+    if (cabinet) return say('The cabinet is already open.');
+    if (command !== 'enter 248') return say('The keypad flashes red. Try the note in the office.');
+    cabinet = true;
+    return say('The keypad clicks. The cabinet opens.');
+  }
+  if (room === 'workshop' && command === 'take fuse') {
+    if (!cabinet) return say('Unlock the cabinet first.');
+    if (fuse || fitted) return say('The cabinet is empty.');
+    fuse = true;
+    return say('You take the spare fuse.');
+  }
+  if (room === 'signalBox' && command === 'use fuse') {
+    if (fitted) return say('The fuse is already fitted.');
+    if (!fuse) return say('You need a spare fuse.');
+    fuse = false;
+    fitted = true;
+    return say('The fuse clicks into place. Try pulling the lever.');
+  }
+  if (room === 'signalBox' && command === 'pull lever') {
+    if (!fitted) return say('The lever does nothing. The relay needs a fuse.');
+    won = true;
+    return say('The beacon lights up. A whistle answers from beyond the bridge.\nThe last train rolls safely into the station. You win!\nType restart to play again.');
+  }
+  say("You can't do that here. Try look or help.");
+}
+document.querySelector('#terminal').addEventListener('submit', event => {
+  event.preventDefault();
+  const command = input.value;
+  input.value = '';
+  run(command);
+});
+document.querySelectorAll('[data-command]').forEach(button => button.addEventListener('click', () => {
+  run(button.dataset.command);
+  input.focus();
+}));
+input.addEventListener('keydown', event => {
+  if (!['ArrowUp','ArrowDown'].includes(event.key)) return;
+  event.preventDefault();
+  historyIndex = Math.max(0, Math.min(history.length, historyIndex + (event.key === 'ArrowUp' ? -1 : 1)));
+  input.value = history[historyIndex] ?? '';
+});
+reset();
+</script>
+</html>
